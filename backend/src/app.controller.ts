@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
@@ -11,11 +11,25 @@ export class AppController {
   }
 
   @Post('users')
-  async createUser(@Body() body: { email: string; name?: string }) {
+  async createUser(
+    @Body()
+    body: {
+      email: string;
+      password: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      jobTitle?: string;
+    },
+  ) {
     return this.prisma.user.create({
       data: {
         email: body.email,
-        name: body.name,
+        password: body.password,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        phone: body.phone,
+        jobTitle: body.jobTitle,
       },
     });
   }

@@ -19,7 +19,17 @@ onMounted(async () => {
         :key="user.id"
         class="p-4 bg-white rounded shadow"
       >
-        {{ user.email }} - {{ user.name }}
+        <div class="font-semibold">
+          {{ user.firstName || 'Brak imienia' }} {{ user.lastName || '' }}
+        </div>
+
+        <div class="text-sm text-gray-600">
+          {{ user.email }}
+        </div>
+
+        <div class="text-sm text-gray-500">
+          Rola: {{ user.role }}
+        </div>
       </li>
     </ul>
   </div>
