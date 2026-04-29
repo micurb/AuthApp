@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: starter_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: starter_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: starter_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/starter_db
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./frontend
+    container_name: starter_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
