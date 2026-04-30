@@ -1,36 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
 
-const users = ref([])
+const auth = useAuthStore()
 
-onMounted(async () => {
-  const res = await fetch('http://localhost:3000/users')
-  users.value = await res.json()
+onMounted(() => {
+  auth.fetchUser()
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 p-10">
-    <h1 class="text-3xl font-bold mb-6">Users</h1>
-
-    <ul class="space-y-2">
-      <li
-        v-for="user in users"
-        :key="user.id"
-        class="p-4 bg-white rounded shadow"
-      >
-        <div class="font-semibold">
-          {{ user.firstName || 'Brak imienia' }} {{ user.lastName || '' }}
-        </div>
-
-        <div class="text-sm text-gray-600">
-          {{ user.email }}
-        </div>
-
-        <div class="text-sm text-gray-500">
-          Rola: {{ user.role }}
-        </div>
-      </li>
-    </ul>
-  </div>
+  <RouterView />
 </template>
