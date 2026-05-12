@@ -4,18 +4,34 @@ import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
 
-const adminMenu = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Użytkownicy', path: '/users' },
-  { label: 'Ustawienia', path: '/settings' },
-]
-
-const userMenu = [
-  { label: 'Dashboard', path: '/dashboard' },
-]
-
 const menuItems = computed(() => {
-  return auth.user?.role === 'ADMIN' ? adminMenu : userMenu
+  const items = [
+    { label: 'Dashboard', path: '/dashboard' },
+  ]
+
+  // ADMIN + SUPER ADMIN
+  if (auth.user?.role === 'ADMIN') {
+    items.push({
+      label: 'Użytkownicy',
+      path: '/users',
+    })
+  }
+
+  // tylko SUPER ADMIN
+  if (auth.user?.isSuperAdmin) {
+    items.push({
+      label: 'Szablony email',
+      path: '/email-templates',
+    })
+  }
+
+  // wszyscy
+  items.push({
+    label: 'Mój profil',
+    path: '/profile',
+  })
+
+  return items
 })
 </script>
 

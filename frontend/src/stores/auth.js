@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: localStorage.getItem('token') || null,
+    mustChangePassword: false,
   }),
 
   actions: {
@@ -12,6 +13,8 @@ export const useAuthStore = defineStore('auth', {
       const res = await api.post('/auth/login', { email, password })
 
       this.token = res.data.access_token
+      this.mustChangePassword = res.data.mustChangePassword
+
       localStorage.setItem('token', this.token)
 
       await this.fetchUser()
@@ -31,6 +34,7 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.user = null
       this.token = null
+      this.mustChangePassword = false
       localStorage.removeItem('token')
     },
   },
