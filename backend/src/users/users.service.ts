@@ -51,6 +51,7 @@ export class UsersService {
         role: true,
         isSuperAdmin: true,
         notificationsEnabled: true,
+        preferredLanguage: true,
         lastLoginAt: true,
         createdAt: true,
       },
@@ -95,6 +96,7 @@ export class UsersService {
       await this.mailerService.sendAccountDeletedEmail(
         deletedUser.email,
         this.getFullName(deletedUser),
+        deletedUser.preferredLanguage,
       );
     } catch (error) {
       console.error('Nie udało się wysłać emaila o usunięciu konta:', error);
@@ -112,6 +114,7 @@ export class UsersService {
       phone?: string;
       jobTitle?: string;
       role?: 'USER' | 'ADMIN';
+      preferredLanguage?: string;
     },
   ) {
     const currentUser = await this.prisma.user.findUnique({
@@ -138,6 +141,13 @@ export class UsersService {
 
     this.validatePhone(data.phone);
 
+    if (
+      data.preferredLanguage &&
+      !['pl', 'en'].includes(data.preferredLanguage)
+    ) {
+      throw new BadRequestException('Nieprawidłowy język użytkownika');
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: {
@@ -146,6 +156,7 @@ export class UsersService {
         phone: data.phone,
         jobTitle: data.jobTitle,
         role: data.role,
+        preferredLanguage: data.preferredLanguage,
       },
       select: {
         id: true,
@@ -156,6 +167,7 @@ export class UsersService {
         jobTitle: true,
         role: true,
         isSuperAdmin: true,
+        preferredLanguage: true,
         updatedAt: true,
       },
     });
@@ -184,6 +196,8 @@ export class UsersService {
       data: {
         password: hashedPassword,
         mustChangePassword: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
 
@@ -192,6 +206,7 @@ export class UsersService {
         userToReset.email,
         temporaryPassword,
         this.getFullName(userToReset),
+        userToReset.preferredLanguage,
       );
     } catch (error) {
       console.error('Nie udało się wysłać emaila:', error);
@@ -209,12 +224,20 @@ export class UsersService {
     phone?: string;
     jobTitle?: string;
     role?: 'USER' | 'ADMIN';
+    preferredLanguage?: string;
   }) {
     if (!data.email) {
       throw new BadRequestException('Email jest wymagany');
     }
 
     this.validatePhone(data.phone);
+
+    if (
+      data.preferredLanguage &&
+      !['pl', 'en'].includes(data.preferredLanguage)
+    ) {
+      throw new BadRequestException('Nieprawidłowy język użytkownika');
+    }
 
     const existingUser = await this.prisma.user.findUnique({
       where: {
@@ -238,6 +261,7 @@ export class UsersService {
         phone: data.phone,
         jobTitle: data.jobTitle,
         role: data.role || 'USER',
+        preferredLanguage: data.preferredLanguage || 'pl',
         mustChangePassword: true,
       },
       select: {
@@ -248,6 +272,7 @@ export class UsersService {
         phone: true,
         jobTitle: true,
         role: true,
+        preferredLanguage: true,
         createdAt: true,
       },
     });
@@ -257,6 +282,7 @@ export class UsersService {
         user.email,
         temporaryPassword,
         this.getFullName(user),
+        user.preferredLanguage,
       );
     } catch (error) {
       console.error('Nie udało się wysłać emaila:', error);

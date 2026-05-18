@@ -1,18 +1,48 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref } from "vue";
+import { RouterLink, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { Eye, EyeOff } from "lucide-vue-next";
+
 import { useAuthStore } from "../stores/auth";
 import AuthLayout from "../layouts/AuthLayout.vue";
+import BaseAlert from "../components/ui/BaseAlert.vue";
+import BaseButton from "../components/ui/BaseButton.vue";
+import LanguageSwitcher from "../components/common/LanguageSwitcher.vue";
+
+const { t } = useI18n();
 
 const email = ref("");
 const password = ref("");
-const error = ref(null);
+const emailErrorKey = ref(null);
+const passwordErrorKey = ref(null);
+const attemptsLeft = ref(null);
+const showPassword = ref(false);
 
 const router = useRouter();
 const auth = useAuthStore();
 
+const emailHasError = computed(() => Boolean(emailErrorKey.value));
+const passwordHasError = computed(() => Boolean(passwordErrorKey.value));
+
+const isValidEmail = value => {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+};
+
 const submit = async () => {
-	error.value = null;
+	emailErrorKey.value = null;
+	passwordErrorKey.value = null;
+	attemptsLeft.value = null;
+
+	if (!email.value) {
+		emailErrorKey.value = "validation.requiredEmail";
+		return;
+	}
+
+	if (!isValidEmail(email.value)) {
+		emailErrorKey.value = "validation.invalidEmail";
+		return;
+	}
 
 	try {
 		await auth.login(email.value, password.value);
@@ -23,7 +53,25 @@ const submit = async () => {
 			router.push("/dashboard");
 		}
 	} catch (err) {
-		error.value = "Nieprawidłowy email lub hasło";
+		const response = err.response?.data;
+
+		if (response?.code === "ACCOUNT_LOCKED") {
+			passwordErrorKey.value = "login.accountLocked";
+			return;
+		}
+
+		if (response?.code === "INVALID_CREDENTIALS") {
+			if (response.attemptsLeft !== undefined) {
+				attemptsLeft.value = response.attemptsLeft;
+				passwordErrorKey.value = "login.invalidCredentialsWithAttempts";
+				return;
+			}
+
+			passwordErrorKey.value = "login.invalidCredentials";
+			return;
+		}
+
+		passwordErrorKey.value = "login.invalidCredentials";
 	}
 };
 </script>
@@ -34,59 +82,101 @@ const submit = async () => {
 			<div class="mb-5 sm:mb-8">
 				<h1
 					class="font-heading mb-2 text-xl font-semibold text-gray-800 sm:text-title-md">
-					{{ $t("login.title") }}
+					{{ t("login.title") }}
 				</h1>
+
 				<p class="text-sm text-gray-500">
-					{{ $t("login.subtitle") }}
+					{{ t("login.subtitle") }}
 				</p>
 			</div>
+
 			<form @submit.prevent="submit">
 				<div class="space-y-5">
 					<div>
 						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700"
-							>{{ $t("login.email") }}
-							<span class="text-error-500">*</span>
+							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
+							{{ t("login.email") }}
+							<span class="text-red-500">*</span>
 						</label>
+
 						<input
 							v-model="email"
 							type="email"
 							name="email"
 							id="email"
-							placeholder="info@gmail.com"
-							class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden" />
+							:placeholder="t('login.emailPlaceholder')"
+							:class="[
+								'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
+								emailHasError
+									? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+									: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
+							]" />
 					</div>
+
 					<div>
 						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700"
-							>{{ $t("login.password") }}
-							<span class="text-error-500">*</span>
+							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
+							{{ t("login.password") }}
+							<span class="text-red-500">*</span>
 						</label>
-						<input
-							v-model="password"
-							type="password"
-							placeholder="Enter your password"
-							class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden" />
+
+						<div class="relative">
+							<input
+								v-model="password"
+								:type="showPassword ? 'text' : 'password'"
+								:placeholder="t('login.passwordPlaceholder')"
+								:class="[
+									'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 pr-12 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
+									passwordHasError
+										? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+										: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
+								]" />
+
+							<button
+								type="button"
+								:aria-label="
+									showPassword
+										? t('login.hidePassword')
+										: t('login.showPassword')
+								"
+								@click="showPassword = !showPassword"
+								class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-800">
+								<Eye v-if="!showPassword" class="h-5 w-5" />
+								<EyeOff v-else class="h-5 w-5" />
+							</button>
+						</div>
 					</div>
-					<div>
-						<p v-if="error">{{ error }}</p>
-					</div>
+
+					<BaseAlert
+						v-if="emailErrorKey || passwordErrorKey"
+						type="error"
+						:message="
+							passwordErrorKey === 'login.invalidCredentialsWithAttempts'
+								? t(passwordErrorKey, { count: attemptsLeft })
+								: t(emailErrorKey || passwordErrorKey)
+						" />
+
 					<div class="flex items-center justify-end">
 						<RouterLink
 							to="/forgot-password"
 							class="text-sm font-medium text-blue-600 hover:text-blue-700">
-							Przypomnij hasło
+							{{ t("login.forgotPassword") }}
 						</RouterLink>
 					</div>
-					<div>
-						<button
-							type="submit"
-							class="bg-blue-600 hover:bg-blue-700 cursor-pointer flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-medium text-white transition">
-							{{ $t("login.submit") }}
-						</button>
-					</div>
+
+					<BaseButton type="submit" variant="primary" :full-width="true">
+						{{ t("login.submit") }}
+					</BaseButton>
+
+					<p class="text-center text-sm text-gray-500">
+						{{ t("login.noAccount") }}
+					</p>
 				</div>
 			</form>
+
+			<div class="mt-8 flex justify-center">
+				<LanguageSwitcher />
+			</div>
 		</div>
 	</AuthLayout>
 </template>

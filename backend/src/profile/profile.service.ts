@@ -97,6 +97,17 @@ export class ProfileService {
       }
     }
 
+    const isSameAsCurrentPassword = await bcrypt.compare(
+      data.newPassword,
+      user.password,
+    );
+
+    if (isSameAsCurrentPassword) {
+      throw new BadRequestException(
+        'Nowe hasło nie może być takie samo jak obecne',
+      );
+    }
+
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
@@ -113,6 +124,8 @@ export class ProfileService {
       data: {
         password: hashedPassword,
         mustChangePassword: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
 

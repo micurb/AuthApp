@@ -1,80 +1,119 @@
 <script setup>
 import { ref } from "vue";
+import { RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
+
 import AuthLayout from "../layouts/AuthLayout.vue";
+import BaseAlert from "../components/ui/BaseAlert.vue";
+import BaseButton from "../components/ui/BaseButton.vue";
 import { api } from "../api";
 
+const { t } = useI18n();
+
 const email = ref("");
-const success = ref(null);
-const error = ref(null);
+const successKey = ref(null);
+const errorKey = ref(null);
+const validationError = ref(null);
 const loading = ref(false);
 
+const isValidEmail = email => {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
 const submit = async () => {
-  success.value = null;
-  error.value = null;
+	successKey.value = null;
+	errorKey.value = null;
+	validationError.value = null;
 
-  try {
-    loading.value = true;
+	if (!email.value) {
+		validationError.value = "validation.requiredEmail";
+		return;
+	}
 
-    const res = await api.post("/auth/forgot-password", {
-      email: email.value,
-    });
+	if (!isValidEmail(email.value)) {
+		validationError.value = "validation.invalidEmail";
+		return;
+	}
 
-    success.value = res.data.message;
-  } catch (err) {
-    error.value = "Nie udało się wysłać emaila resetującego";
-  } finally {
-    loading.value = false;
-  }
+	try {
+		loading.value = true;
+
+		await api.post("/auth/forgot-password", {
+			email: email.value,
+		});
+
+		successKey.value = "forgotPassword.success";
+	} catch (err) {
+		errorKey.value = "forgotPassword.error";
+	} finally {
+		loading.value = false;
+	}
 };
 </script>
 
 <template>
-  <AuthLayout>
-    <div>
-      <div class="mb-5 sm:mb-8">
-        <h1 class="font-heading mb-2 text-xl font-semibold text-gray-800">
-          Przypomnij hasło
-        </h1>
+	<AuthLayout>
+		<div>
+			<div class="mb-5 sm:mb-8">
+				<h1 class="font-heading mb-2 text-xl font-semibold text-gray-800">
+					{{ t("forgotPassword.title") }}
+				</h1>
 
-        <p class="text-sm text-gray-500">
-          Podaj email, a wyślemy link do resetu hasła.
-        </p>
-      </div>
+				<p class="text-sm text-gray-500">
+					{{ t("forgotPassword.subtitle") }}
+				</p>
+			</div>
 
-      <form @submit.prevent="submit">
-        <div class="space-y-5">
-          <div>
-            <label
-              class="font-heading mb-1.5 block text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
+			<form @submit.prevent="submit">
+				<div class="space-y-5">
+					<div>
+						<label
+							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
+							{{ t("forgotPassword.email") }}
+							<span class="text-red-500">*</span>
+						</label>
 
-            <input
-              v-model="email"
-              type="email"
-              placeholder="twoj@email.com"
-              class="shadow-theme-xs h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden"
-            />
-          </div>
+						<input
+							v-model="email"
+							type="email"
+							:placeholder="t('forgotPassword.emailPlaceholder')"
+							:class="[
+								'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
+								validationError
+									? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+									: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
+							]" />
+					</div>
 
-          <p v-if="success" class="text-sm text-green-600">
-            {{ success }}
-          </p>
+					<BaseAlert
+						v-if="validationError || errorKey"
+						type="error"
+						:message="t(validationError || errorKey)" />
 
-          <p v-if="error" class="text-sm text-red-600">
-            {{ error }}
-          </p>
+					<BaseAlert
+						v-if="successKey"
+						type="success"
+						:message="t(successKey)" />
 
-          <button
-            type="submit"
-            :disabled="loading"
-            class="flex w-full cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
-          >
-            {{ loading ? "Wysyłanie..." : "Wyślij link resetujący" }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </AuthLayout>
+					<BaseButton
+						type="submit"
+						variant="primary"
+						:full-width="true"
+						:disabled="loading">
+						{{
+							loading ? t("forgotPassword.sending") : t("forgotPassword.submit")
+						}}
+					</BaseButton>
+
+					<div class="text-center">
+						<RouterLink
+							to="/login"
+							class="text-sm font-medium text-blue-600 hover:text-blue-700">
+							{{ t("forgotPassword.backToLogin") }}
+						</RouterLink>
+					</div>
+				</div>
+			</form>
+		</div>
+	</AuthLayout>
 </template>

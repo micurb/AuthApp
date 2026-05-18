@@ -1,0 +1,189 @@
+{
+	"app": {
+		"name": "SMI SYSTEM"
+	},
+
+	"login": {
+		"title": "Sign In",
+		"subtitle": "Enter your email and password",
+		"email": "Email",
+		"password": "Password",
+		"submit": "Sign In",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password",
+		"noAccount": "Don’t have an account? Contact your system administrator.",
+		"emailPlaceholder": "Enter your email",
+		"passwordPlaceholder": "Enter your password",
+		"forgotPassword": "Forgot password",
+		"invalidCredentials": "Invalid email or password",
+		"invalidCredentialsWithAttempts": "Invalid password. Attempts left: {count}.",
+		"accountLocked": "Your account has been temporarily locked. Try again later or reset your password."
+	},
+
+	"forgotPassword": {
+		"title": "Forgot password",
+		"subtitle": "Enter your email and we will send you a password reset link.",
+		"email": "Email",
+		"emailPlaceholder": "Enter your email",
+		"submit": "Send reset link",
+		"sending": "Sending...",
+		"success": "If the account exists, the reset link has been sent.",
+		"error": "Could not send the password reset email",
+		"backToLogin": "Back to sign in"
+	},
+
+	"changePassword": {
+		"title": "Change password",
+		"subtitle": "You must change your password before continuing.",
+		"currentPassword": "Current password",
+		"newPassword": "New password",
+		"confirmPassword": "Confirm new password",
+		"submit": "Change password",
+		"saving": "Saving...",
+		"passwordsNotMatch": "Passwords do not match",
+		"passwordPolicy": "Password must be at least 8 characters and include uppercase, lowercase, number and special character.",
+		"error": "Could not change password",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password"
+	},
+
+	"validation": {
+		"requiredEmail": "Email is required",
+		"invalidEmail": "Enter a valid email address",
+		"requiredFields": "Fill in all required fields"
+	},
+
+	"resetPassword": {
+		"title": "Reset password",
+		"subtitle": "Set a new password for your account.",
+		"password": "New password",
+		"confirmPassword": "Confirm new password",
+		"submit": "Change password",
+		"saving": "Saving...",
+		"success": "Password has been changed. You will be redirected to sign in.",
+		"missingToken": "Missing reset token",
+		"passwordsNotMatch": "Passwords do not match",
+		"passwordPolicy": "Password must be at least 8 characters and include uppercase, lowercase, number and special character.",
+		"error": "Could not change password",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password",
+		"sameAsCurrentPassword": "The new password cannot be the same as the current password."
+	},
+
+	"dashboard": {
+		"title": "Dashboard",
+		"welcome": "Welcome to the SMI system 👋"
+	},
+
+	"sidebar": {
+		"dashboard": "Dashboard",
+		"users": "Users",
+		"emailTemplates": "Email Templates",
+		"profile": "My Profile",
+		"language": "Language"
+	},
+
+	"topbar": {
+		"dashboard": "Dashboard",
+		"users": "Users",
+		"emailTemplates": "Email Templates",
+		"profile": "Profile",
+		"logout": "Logout",
+		"welcome": "Welcome",
+		"superAdmin": "Super Administrator",
+		"admin": "Administrator",
+		"user": "User"
+	},
+
+	"profile": {
+		"title": "My profile",
+		"summaryTitle": "User profile",
+		"editTitle": "Edit details",
+		"editSubtitle": "You can edit your profile details and notification settings.",
+		"fullName": "Full name",
+		"email": "Email",
+		"phone": "Phone",
+		"jobTitle": "Job title",
+		"role": "Role",
+		"lastLogin": "Last login",
+		"notifications": "Notifications",
+		"firstName": "First name",
+		"lastName": "Last name",
+		"notificationsEnabled": "Receive email notifications",
+		"save": "Save changes",
+		"saved": "Profile details have been saved",
+		"saveError": "Could not save profile",
+		"enabled": "ENABLED",
+		"disabled": "DISABLED",
+		"superAdmin": "SUPER ADMIN",
+		"admin": "ADMIN",
+		"user": "USER",
+		"language": "Language"
+	},
+
+	"users": {
+		"createTitle": "Add user",
+		"createSubtitle": "A temporary password will be generated automatically and sent to the user's email.",
+		"email": "Email",
+		"firstName": "First name",
+		"lastName": "Last name",
+		"phone": "Phone",
+		"jobTitle": "Job title",
+		"role": "Role",
+		"add": "Add user",
+		"adding": "Adding...",
+		"created": "User has been added",
+		"createError": "Could not add user",
+		"title": "Users",
+		"searchPlaceholder": "Search user...",
+		"clearFilter": "Clear filter",
+		"found": "Users found: {count}",
+		"noResults": "No users found",
+		"notifications": "Notifications",
+		"lastLogin": "Last login",
+		"actions": "Actions",
+		"enabled": "ENABLED",
+		"disabled": "DISABLED",
+		"edit": "Edit",
+		"delete": "Delete",
+		"resetPassword": "Reset password",
+		"updated": "User has been updated",
+		"updateError": "Could not update user",
+		"deleted": "User has been deleted",
+		"deleteError": "Could not delete user",
+		"resetSent": "A new temporary password has been sent to the user's email",
+		"resetError": "Could not reset password",
+		"deleteTitle": "Delete user?",
+		"deleteQuestion": "Are you sure you want to delete user",
+		"cancel": "Cancel",
+		"deleting": "Deleting...",
+		"editTitle": "Edit user",
+		"saving": "Saving...",
+		"saveChanges": "Save changes",
+		"resetTitle": "Reset password?",
+		"resetQuestion": "Are you sure you want to generate a new temporary password for user",
+		"resetInfo": "The user will receive an email with a new password and will have to change it after signing in.",
+		"resetting": "Resetting...",
+		"language": "Language"
+	},
+
+	"emailTemplates": {
+		"title": "Email templates",
+		"subtitle": "Edit messages sent automatically by the system.",
+		"listTitle": "Template list",
+		"selectTemplate": "Select a template from the list.",
+		"name": "Name",
+		"subject": "Subject",
+		"bodyHtml": "HTML content",
+		"active": "Active",
+		"inactive": "Inactive",
+		"templateActive": "Template active",
+		"variables": "Available variables",
+		"preview": "Preview",
+		"save": "Save template",
+		"saved": "Template has been saved",
+		"fetchError": "Could not fetch templates",
+		"saveError": "Could not save template",
+		"language": "Language"
+	  }
+}

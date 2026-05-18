@@ -19,18 +19,33 @@ const prisma = new PrismaClient({
 
 async function seedEmailTemplates() {
   for (const template of defaultEmailTemplates) {
-    await prisma.emailTemplate.upsert({
+    const existingTemplate = await prisma.emailTemplate.findFirst({
       where: {
         key: template.key,
+        language: template.language,
       },
-      update: {
-        name: template.name,
-        subject: template.subject,
-        bodyHtml: template.bodyHtml,
-        isActive: template.isActive,
-      },
-      create: {
+    });
+
+    if (existingTemplate) {
+      await prisma.emailTemplate.update({
+        where: {
+          id: existingTemplate.id,
+        },
+        data: {
+          name: template.name,
+          subject: template.subject,
+          bodyHtml: template.bodyHtml,
+          isActive: template.isActive,
+        },
+      });
+
+      continue;
+    }
+
+    await prisma.emailTemplate.create({
+      data: {
         key: template.key,
+        language: template.language,
         name: template.name,
         subject: template.subject,
         bodyHtml: template.bodyHtml,
@@ -38,8 +53,6 @@ async function seedEmailTemplates() {
       },
     });
   }
-
-  console.log('✅ Email templates seeded');
 }
 
 async function seedSuperAdmin() {

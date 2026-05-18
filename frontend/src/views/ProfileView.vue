@@ -1,7 +1,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+
 import DashboardLayout from "../layouts/DashboardLayout.vue";
+import BaseAlert from "../components/ui/BaseAlert.vue";
+import BaseButton from "../components/ui/BaseButton.vue";
 import { api } from "../api";
+
+const { t, locale } = useI18n();
 
 const profile = ref(null);
 
@@ -11,15 +17,31 @@ const form = ref({
 	phone: "",
 	jobTitle: "",
 	notificationsEnabled: true,
+	preferredLanguage: "pl",
 });
 
-const message = ref(null);
-const error = ref(null);
+const messageKey = ref(null);
+const errorKey = ref(null);
+const errorMessage = ref(null);
 
 const phoneHasError = () => {
-	if (!error.value) return false;
+	if (!errorMessage.value) return false;
 
-	return error.value.toLowerCase().includes("telefonu");
+	return errorMessage.value.toLowerCase().includes("telefonu");
+};
+
+const inputClass = hasError => [
+	"w-full rounded-lg border px-4 py-2 text-sm text-gray-800 transition focus:ring-4 focus:outline-hidden",
+	hasError
+		? "border-red-500 focus:border-red-500 focus:ring-red-100"
+		: "border-gray-300 focus:border-blue-500 focus:ring-blue-100",
+];
+
+const roleLabel = () => {
+	if (profile.value?.isSuperAdmin) return t("profile.superAdmin");
+	if (profile.value?.role === "ADMIN") return t("profile.admin");
+
+	return t("profile.user");
 };
 
 onMounted(async () => {
@@ -33,12 +55,14 @@ onMounted(async () => {
 		phone: res.data.phone || "",
 		jobTitle: res.data.jobTitle || "",
 		notificationsEnabled: res.data.notificationsEnabled ?? true,
+		preferredLanguage: res.data.preferredLanguage || "pl",
 	};
 });
 
 const submit = async () => {
-	message.value = null;
-	error.value = null;
+	messageKey.value = null;
+	errorKey.value = null;
+	errorMessage.value = null;
 
 	try {
 		const res = await api.patch("/profile", form.value);
@@ -48,10 +72,13 @@ const submit = async () => {
 			...res.data,
 		};
 
-		message.value = "Dane profilu zostały zapisane";
+		locale.value = form.value.preferredLanguage;
+		localStorage.setItem("locale", form.value.preferredLanguage);
+
+		messageKey.value = "profile.saved";
 	} catch (err) {
-		error.value =
-		err.response?.data?.message || "Nie udało się zapisać profilu";
+		errorMessage.value = err.response?.data?.message || null;
+		errorKey.value = "profile.saveError";
 	}
 };
 </script>
@@ -59,18 +86,20 @@ const submit = async () => {
 <template>
 	<DashboardLayout>
 		<div class="mb-6">
-			<h1 class="text-2xl font-semibold text-gray-900">Mój profil</h1>
+			<h1 class="text-2xl font-semibold text-gray-900">
+				{{ t("profile.title") }}
+			</h1>
 		</div>
 
-		<!-- Karta podsumowania -->
-		<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-6">
-			<h2 class="mb-6 text-lg font-semibold text-gray-900">
-				Profil użytkownika
+		<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+			<h2 class="mb-4 text-lg font-semibold text-gray-900">
+				{{ t("profile.summaryTitle") }}
 			</h2>
 
-			<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-7">
+			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
 				<div>
-					<p class="text-xs text-gray-500">Imię i nazwisko</p>
+					<p class="text-xs text-gray-500">{{ t("profile.fullName") }}</p>
+
 					<p class="mt-1 font-medium text-gray-900">
 						{{ profile?.firstName || "-" }}
 						{{ profile?.lastName || "" }}
@@ -78,52 +107,55 @@ const submit = async () => {
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Email</p>
+					<p class="text-xs text-gray-500">{{ t("profile.email") }}</p>
+
 					<p class="mt-1 font-medium text-gray-900">
 						{{ profile?.email || "-" }}
 					</p>
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Telefon</p>
+					<p class="text-xs text-gray-500">{{ t("profile.phone") }}</p>
+
 					<p class="mt-1 font-medium text-gray-900">
 						{{ profile?.phone || "-" }}
 					</p>
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Stanowisko</p>
+					<p class="text-xs text-gray-500">{{ t("profile.jobTitle") }}</p>
+
 					<p class="mt-1 font-medium text-gray-900">
 						{{ profile?.jobTitle || "-" }}
 					</p>
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Rola</p>
+					<p class="text-xs text-gray-500">{{ t("profile.role") }}</p>
 
 					<div class="mt-1">
 						<span
 							v-if="profile?.isSuperAdmin"
 							class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
-							SUPER ADMIN
+							{{ roleLabel() }}
 						</span>
 
 						<span
 							v-else-if="profile?.role === 'ADMIN'"
 							class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-							ADMIN
+							{{ roleLabel() }}
 						</span>
 
 						<span
 							v-else
 							class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-							USER
+							{{ roleLabel() }}
 						</span>
 					</div>
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Ostatnie logowanie</p>
+					<p class="text-xs text-gray-500">{{ t("profile.lastLogin") }}</p>
 
 					<p class="mt-1 font-medium text-gray-900">
 						{{
@@ -135,105 +167,114 @@ const submit = async () => {
 				</div>
 
 				<div>
-					<p class="text-xs text-gray-500">Powiadomienia</p>
+					<p class="text-xs text-gray-500">
+						{{ t("profile.notifications") }}
+					</p>
 
 					<div class="mt-1">
 						<span
 							v-if="profile?.notificationsEnabled"
 							class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-							WŁĄCZONE
+							{{ t("profile.enabled") }}
 						</span>
 
 						<span
 							v-else
 							class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-							WYŁĄCZONE
+							{{ t("profile.disabled") }}
 						</span>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Formularz edycji -->
-		<div class="rounded-2xl border border-gray-200 bg-white p-6">
-			<h2 class="mb-4 text-lg font-semibold text-gray-900">Edytuj dane</h2>
+		<div class="rounded-2xl border border-gray-200 bg-white p-5">
+			<h2 class="mb-2 text-lg font-semibold text-gray-900">
+				{{ t("profile.editTitle") }}
+			</h2>
 
-			<p class="mb-4 text-sm text-gray-500">
-				Możesz edytować swoje dane profilowe oraz ustawienia powiadomień.
+			<p class="mb-3 text-sm text-gray-500">
+				{{ t("profile.editSubtitle") }}
 			</p>
 
-			<p v-if="message" class="mb-4 text-sm text-green-600">
-				{{ message }}
-			</p>
+			<BaseAlert
+				v-if="messageKey"
+				type="success"
+				:message="t(messageKey)"
+				class="mb-4" />
 
-			<p v-if="error" class="mb-4 text-sm text-red-600">
-				{{ error }}
-			</p>
+			<BaseAlert
+				v-if="errorKey"
+				type="error"
+				:message="errorMessage || t(errorKey)"
+				class="mb-4" />
 
 			<form
 				@submit.prevent="submit"
-				class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+				class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 				<div>
 					<label class="mb-1 block text-sm font-medium text-gray-700">
-						Imię
+						{{ t("profile.firstName") }}
 					</label>
 
-					<input
-						v-model="form.firstName"
-						class="w-full rounded-lg border border-gray-300 px-4 py-2" />
+					<input v-model="form.firstName" :class="inputClass(false)" />
 				</div>
 
 				<div>
 					<label class="mb-1 block text-sm font-medium text-gray-700">
-						Nazwisko
+						{{ t("profile.lastName") }}
 					</label>
 
-					<input
-						v-model="form.lastName"
-						class="w-full rounded-lg border border-gray-300 px-4 py-2" />
+					<input v-model="form.lastName" :class="inputClass(false)" />
 				</div>
 
 				<div>
 					<label class="mb-1 block text-sm font-medium text-gray-700">
-						Telefon
+						{{ t("profile.phone") }}
 					</label>
 
-					<input
-						v-model="form.phone"
-						:class="[
-							'w-full rounded-lg border px-4 py-2',
-							phoneHasError()
-								? 'border-red-500 focus:border-red-500'
-								: 'border-gray-300',
-						]" />
+					<input v-model="form.phone" :class="inputClass(phoneHasError())" />
 				</div>
 
 				<div>
 					<label class="mb-1 block text-sm font-medium text-gray-700">
-						Stanowisko
+						{{ t("profile.jobTitle") }}
 					</label>
 
-					<input
-						v-model="form.jobTitle"
-						class="w-full rounded-lg border border-gray-300 px-4 py-2" />
+					<input v-model="form.jobTitle" :class="inputClass(false)" />
 				</div>
 
-				<label
-					class="flex items-center gap-3 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700">
-					<input
-						v-model="form.notificationsEnabled"
-						type="checkbox"
-						class="h-4 w-4" />
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700">
+						{{ t("profile.language") }}
+					</label>
 
-					Otrzymuj powiadomienia email
-				</label>
+					<select v-model="form.preferredLanguage" :class="inputClass(false)">
+						<option value="pl">Polski</option>
+						<option value="en">English</option>
+					</select>
+				</div>
+
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700">
+						{{ t("profile.notifications") }}
+					</label>
+
+					<label
+						class="flex h-[42px] items-center gap-3 rounded-lg border border-gray-300 px-4 text-sm text-gray-700">
+						<input
+							v-model="form.notificationsEnabled"
+							type="checkbox"
+							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+
+						{{ t("profile.notificationsEnabled") }}
+					</label>
+				</div>
 
 				<div class="flex items-end">
-					<button
-						type="submit"
-						class="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-						Zapisz zmiany
-					</button>
+					<BaseButton type="submit" variant="primary" :full-width="true">
+						{{ t("profile.save") }}
+					</BaseButton>
 				</div>
 			</form>
 		</div>

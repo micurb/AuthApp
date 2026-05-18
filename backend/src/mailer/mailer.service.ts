@@ -30,16 +30,18 @@ export class MailerService {
     to: string,
     templateKey: EmailTemplateKey,
     variables: Record<string, string>,
+    language = 'pl',
   ) {
-    const template = await this.prisma.emailTemplate.findUnique({
+    const template = await this.prisma.emailTemplate.findFirst({
       where: {
         key: templateKey,
+        language,
       },
     });
 
     if (!template || !template.isActive) {
       throw new NotFoundException(
-        `Email template ${templateKey} not found or inactive`,
+        `Email template ${templateKey} (${language}) not found or inactive`,
       );
     }
 
@@ -58,24 +60,65 @@ export class MailerService {
     to: string,
     password: string,
     fullName?: string,
+    language = 'pl',
   ) {
-    await this.sendTemplateEmail(to, EmailTemplateKey.ACCOUNT_CREATED, {
-      fullName: fullName ?? '',
-      temporaryPassword: password,
-    });
+    await this.sendTemplateEmail(
+      to,
+      EmailTemplateKey.ACCOUNT_CREATED,
+      {
+        fullName: fullName ?? '',
+        temporaryPassword: password,
+      },
+      language,
+    );
   }
 
-  async sendPasswordResetEmail(to: string, token: string) {
+  async sendPasswordResetEmail(
+    to: string,
+    token: string,
+    language = 'pl',
+  ) {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    await this.sendTemplateEmail(to, EmailTemplateKey.PASSWORD_RESET, {
-      resetLink,
-    });
+    await this.sendTemplateEmail(
+      to,
+      EmailTemplateKey.PASSWORD_RESET,
+      {
+        resetLink,
+      },
+      language,
+    );
   }
 
-  async sendAccountDeletedEmail(to: string, fullName?: string) {
-    await this.sendTemplateEmail(to, EmailTemplateKey.ACCOUNT_DELETED, {
-      fullName: fullName ?? '',
-    });
+  async sendAccountDeletedEmail(
+    to: string,
+    fullName?: string,
+    language = 'pl',
+  ) {
+    await this.sendTemplateEmail(
+      to,
+      EmailTemplateKey.ACCOUNT_DELETED,
+      {
+        fullName: fullName ?? '',
+      },
+      language,
+    );
+  }
+
+  async sendAccountLockedEmail(
+    to: string,
+    lockedUntil: string,
+    fullName?: string,
+    language = 'pl',
+  ) {
+    await this.sendTemplateEmail(
+      to,
+      EmailTemplateKey.ACCOUNT_LOCKED,
+      {
+        fullName: fullName ?? '',
+        lockedUntil,
+      },
+      language,
+    );
   }
 }

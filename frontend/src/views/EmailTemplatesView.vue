@@ -1,7 +1,13 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+
 import DashboardLayout from "../layouts/DashboardLayout.vue";
+import BaseAlert from "../components/ui/BaseAlert.vue";
+import BaseButton from "../components/ui/BaseButton.vue";
 import { api } from "../api";
+
+const { t } = useI18n();
 
 const templates = ref([]);
 const loading = ref(false);
@@ -21,12 +27,14 @@ const variables = {
 	fullName: "{{fullName}}",
 	temporaryPassword: "{{temporaryPassword}}",
 	resetLink: "{{resetLink}}",
+	lockedUntil: "{{lockedUntil}}",
 };
 
 const previewVariables = {
 	fullName: "Jan Kowalski",
 	temporaryPassword: "Temp123!@#",
 	resetLink: "https://smi.local/reset-password?token=example-token",
+	lockedUntil: "2026-05-18 14:30",
 };
 
 const previewHtml = computed(() => {
@@ -48,8 +56,7 @@ const fetchTemplates = async () => {
 		const res = await api.get("/email-templates");
 		templates.value = res.data;
 	} catch (err) {
-		error.value =
-			err.response?.data?.message || "Nie udało się pobrać szablonów";
+		error.value = err.response?.data?.message || t("emailTemplates.fetchError");
 	} finally {
 		loading.value = false;
 	}
@@ -89,54 +96,99 @@ const saveTemplate = async () => {
 
 		selectedTemplate.value = res.data;
 
+		form.value = {
+			name: res.data.name,
+			subject: res.data.subject,
+			bodyHtml: res.data.bodyHtml,
+			isActive: res.data.isActive,
+		};
+
 		templates.value = templates.value.map(template =>
 			template.id === res.data.id ? res.data : template
 		);
 
-		success.value = "Szablon został zapisany";
+		success.value = t("emailTemplates.saved");
 	} catch (err) {
-		error.value =
-			err.response?.data?.message || "Nie udało się zapisać szablonu";
+		error.value = err.response?.data?.message || t("emailTemplates.saveError");
 	} finally {
 		loading.value = false;
 	}
 };
 
 onMounted(fetchTemplates);
+
+const selectedLanguage = ref("pl");
+
+const filteredTemplates = computed(() => {
+	return templates.value.filter(
+		template => template.language === selectedLanguage.value
+	);
+});
 </script>
 
 <template>
 	<DashboardLayout>
 		<div class="mb-6">
-			<h1 class="text-2xl font-semibold text-gray-900">Szablony email</h1>
+			<h1 class="text-2xl font-semibold text-gray-900">
+				{{ t("emailTemplates.title") }}
+			</h1>
 
 			<p class="mt-1 text-sm text-gray-500">
-				Edycja wiadomości wysyłanych automatycznie przez system.
+				{{ t("emailTemplates.subtitle") }}
 			</p>
 		</div>
 
-		<div
-			v-if="error"
-			class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-			{{ error }}
-		</div>
+		<BaseAlert v-if="error" type="error" :message="error" class="mb-4" />
 
-		<div
-			v-if="success"
-			class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-			{{ success }}
-		</div>
+		<BaseAlert v-if="success" type="success" :message="success" class="mb-4" />
 
 		<div class="grid gap-6 lg:grid-cols-3">
-			<!-- Lista template -->
 			<div class="rounded-2xl border border-gray-200 bg-white">
 				<div class="border-b border-gray-200 px-5 py-4">
-					<h2 class="font-semibold text-gray-900">Lista szablonów</h2>
+					<h2 class="mb-3 font-semibold text-gray-900">
+						{{ t("emailTemplates.listTitle") }}
+					</h2>
+
+					<div class="flex gap-2">
+						<button
+							type="button"
+							@click="
+								selectedLanguage = 'pl';
+								selectedTemplate = null;
+								success = '';
+								error = '';
+							"
+							class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition"
+							:class="
+								selectedLanguage === 'pl'
+									? 'bg-blue-600 text-white'
+									: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+							">
+							PL
+						</button>
+
+						<button
+							type="button"
+							@click="
+								selectedLanguage = 'en';
+								selectedTemplate = null;
+								success = '';
+								error = '';
+							"
+							class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition"
+							:class="
+								selectedLanguage === 'en'
+									? 'bg-blue-600 text-white'
+									: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+							">
+							EN
+						</button>
+					</div>
 				</div>
 
 				<div class="divide-y divide-gray-100">
 					<button
-						v-for="template in templates"
+						v-for="template in filteredTemplates"
 						:key="template.id"
 						type="button"
 						@click="selectTemplate(template)"
@@ -146,8 +198,13 @@ onMounted(fetchTemplates);
 							{{ template.name }}
 						</div>
 
-						<div class="mt-1 text-xs text-gray-500">
-							{{ template.key }}
+						<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+							<span>{{ template.key }}</span>
+
+							<span
+								class="rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-gray-600">
+								{{ template.language?.toUpperCase() || "PL" }}
+							</span>
 						</div>
 
 						<div class="mt-2">
@@ -158,24 +215,27 @@ onMounted(fetchTemplates);
 										? 'bg-green-100 text-green-700'
 										: 'bg-gray-100 text-gray-600'
 								">
-								{{ template.isActive ? "Aktywny" : "Nieaktywny" }}
+								{{
+									template.isActive
+										? t("emailTemplates.active")
+										: t("emailTemplates.inactive")
+								}}
 							</span>
 						</div>
 					</button>
 				</div>
 			</div>
 
-			<!-- Edycja -->
 			<div
 				class="rounded-2xl border border-gray-200 bg-white p-6 lg:col-span-2">
 				<div v-if="!selectedTemplate" class="text-sm text-gray-500">
-					Wybierz szablon z listy.
+					{{ t("emailTemplates.selectTemplate") }}
 				</div>
 
 				<form v-else @submit.prevent="saveTemplate" class="space-y-5">
 					<div>
 						<label class="mb-1 block text-sm font-medium text-gray-700">
-							Nazwa
+							{{ t("emailTemplates.name") }}
 						</label>
 
 						<input
@@ -186,7 +246,7 @@ onMounted(fetchTemplates);
 
 					<div>
 						<label class="mb-1 block text-sm font-medium text-gray-700">
-							Temat
+							{{ t("emailTemplates.subject") }}
 						</label>
 
 						<input
@@ -197,7 +257,7 @@ onMounted(fetchTemplates);
 
 					<div>
 						<label class="mb-1 block text-sm font-medium text-gray-700">
-							Treść HTML
+							{{ t("emailTemplates.bodyHtml") }}
 						</label>
 
 						<textarea
@@ -212,13 +272,12 @@ onMounted(fetchTemplates);
 							type="checkbox"
 							class="rounded border-gray-300" />
 
-						Szablon aktywny
+						{{ t("emailTemplates.templateActive") }}
 					</label>
 
-					<!-- Variables -->
 					<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
 						<div class="mb-2 text-sm font-medium text-gray-700">
-							Dostępne zmienne
+							{{ t("emailTemplates.variables") }}
 						</div>
 
 						<div class="flex flex-wrap gap-2 text-xs">
@@ -233,23 +292,25 @@ onMounted(fetchTemplates);
 							<span class="rounded-full bg-white px-3 py-1 text-gray-700">
 								{{ variables.resetLink }}
 							</span>
+
+							<span class="rounded-full bg-white px-3 py-1 text-gray-700">
+								{{ variables.lockedUntil }}
+							</span>
 						</div>
 					</div>
 
-					<!-- Preview -->
 					<div class="rounded-xl border border-gray-200 p-4">
-						<div class="mb-3 text-sm font-medium text-gray-700">Podgląd</div>
+						<div class="mb-3 text-sm font-medium text-gray-700">
+							{{ t("emailTemplates.preview") }}
+						</div>
 
 						<div class="prose max-w-none text-sm" v-html="previewHtml" />
 					</div>
 
 					<div class="flex justify-end">
-						<button
-							type="submit"
-							:disabled="loading"
-							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50">
-							Zapisz szablon
-						</button>
+						<BaseButton type="submit" variant="primary" :disabled="loading">
+							{{ t("emailTemplates.save") }}
+						</BaseButton>
 					</div>
 				</form>
 			</div>

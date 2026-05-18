@@ -22,7 +22,10 @@ model User {
   role                  Role     @default(USER)
   isSuperAdmin          Boolean  @default(false)
   notificationsEnabled  Boolean  @default(true)
+  preferredLanguage String @default("pl")
   mustChangePassword    Boolean @default(false)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
   passwordResetToken     String?
   passwordResetExpiresAt DateTime?
   lastLoginAt           DateTime?
@@ -49,7 +52,8 @@ model LoginLog {
 
 model EmailTemplate {
   id        String   @id @default(uuid())
-  key       String   @unique
+  key       String
+  language  String   @default("pl")
   name      String
   subject   String
   bodyHtml  String
@@ -57,4 +61,6 @@ model EmailTemplate {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([key, language], name: "key_language_unique")
 }

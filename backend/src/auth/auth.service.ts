@@ -10,6 +10,9 @@ import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { MailerService } from '../mailer/mailer.service';
 
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOCK_TIME_MINUTES = 15;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -41,25 +44,80 @@ export class AuthService {
     };
   }
 
+  private getLockUntilDate() {
+    return new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
+  }
+
+  private isUserLocked(lockedUntil: Date | null) {
+    return lockedUntil && lockedUntil > new Date();
+  }
+
   async login(data: { email: string; password: string }, req?: any) {
     const user = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
+    }
+
+    if (this.isUserLocked(user.lockedUntil)) {
+      throw new UnauthorizedException({
+        code: 'ACCOUNT_LOCKED',
+        message: 'Account temporarily locked',
+        lockedUntil: user.lockedUntil,
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      const failedAttempts = user.failedLoginAttempts + 1;
+
+      const lockedUntil =
+        failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+          ? this.getLockUntilDate()
+          : null;
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: failedAttempts,
+          lockedUntil,
+        },
+      });
+
+      if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        await this.mailerService.sendAccountLockedEmail(
+          user.email,
+          lockedUntil!.toLocaleString(),
+          `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+          user.preferredLanguage,
+        );
+
+        throw new UnauthorizedException({
+          code: 'ACCOUNT_LOCKED',
+          message: 'Account temporarily locked',
+          lockedUntil,
+        });
+      }
+
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+        attemptsLeft: MAX_FAILED_LOGIN_ATTEMPTS - failedAttempts,
+      });
     }
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         lastLoginAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
 
@@ -98,9 +156,7 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-
     const hashedToken = await bcrypt.hash(resetToken, 10);
-
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
 
     await this.prisma.user.update({
@@ -111,7 +167,11 @@ export class AuthService {
       },
     });
 
-    await this.mailerService.sendPasswordResetEmail(user.email, resetToken);
+    await this.mailerService.sendPasswordResetEmail(
+      user.email,
+      resetToken,
+      user.preferredLanguage,
+    );
 
     return {
       message: 'Jeśli konto istnieje, email resetujący został wysłany.',
@@ -144,13 +204,23 @@ export class AuthService {
       throw new BadRequestException('Nieprawidłowy lub wygasły token');
     }
 
-    // walidacja hasła
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
     if (!passwordRegex.test(data.password)) {
       throw new BadRequestException(
         'Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny',
+      );
+    }
+
+    const isSameAsCurrentPassword = await bcrypt.compare(
+      data.password,
+      matchedUser.password,
+    );
+
+    if (isSameAsCurrentPassword) {
+      throw new BadRequestException(
+        'Nowe hasło nie może być takie samo jak obecne',
       );
     }
 
@@ -163,6 +233,8 @@ export class AuthService {
         passwordResetToken: null,
         passwordResetExpiresAt: null,
         mustChangePassword: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
 

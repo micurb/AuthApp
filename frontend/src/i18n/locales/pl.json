@@ -1,0 +1,191 @@
+{
+	"app": {
+		"name": "SYSTEM SMI"
+	},
+
+	"login": {
+		"title": "Zaloguj się",
+		"subtitle": "Podaj email i hasło",
+		"email": "Email",
+		"password": "Hasło",
+		"submit": "Zaloguj się",
+		"showPassword": "Pokaż hasło",
+		"hidePassword": "Ukryj hasło",
+		"noAccount": "Nie posiadasz konta? Skontaktuj się z administratorem systemu.",
+		"emailPlaceholder": "Wpisz adres email",
+		"passwordPlaceholder": "Wpisz hasło",
+		"forgotPassword": "Przypomnij hasło",
+		"invalidCredentials": "Nieprawidłowy email lub hasło",
+		"invalidCredentialsWithAttempts": "Nieprawidłowe hasło. Pozostała liczba prób: {count}.",
+		"accountLocked": "Konto zostało tymczasowo zablokowane. Spróbuj ponownie później lub zresetuj hasło."
+	},
+
+	"forgotPassword": {
+		"title": "Przypomnij hasło",
+		"subtitle": "Podaj email, a wyślemy link do resetu hasła.",
+		"email": "Email",
+		"emailPlaceholder": "Wpisz adres email",
+		"submit": "Wyślij link resetujący",
+		"sending": "Wysyłanie...",
+		"success": "Jeśli konto istnieje, link resetujący został wysłany.",
+		"error": "Nie udało się wysłać emaila resetującego",
+		"backToLogin": "Wróć do logowania"
+	},
+
+	"changePassword": {
+		"title": "Zmień hasło",
+		"subtitle": "Musisz zmienić hasło przed dalszym korzystaniem z systemu.",
+		"currentPassword": "Aktualne hasło",
+		"newPassword": "Nowe hasło",
+		"confirmPassword": "Powtórz nowe hasło",
+		"submit": "Zmień hasło",
+		"saving": "Zapisywanie...",
+		"passwordsNotMatch": "Hasła nie są takie same",
+		"passwordPolicy": "Hasło musi mieć min. 8 znaków, dużą i małą literę, cyfrę oraz znak specjalny.",
+		"error": "Błąd zmiany hasła",
+		"showPassword": "Pokaż hasło",
+		"hidePassword": "Ukryj hasło"
+	},
+
+	"validation": {
+		"requiredEmail": "Email jest wymagany",
+		"invalidEmail": "Podaj poprawny adres email",
+		"requiredFields": "Uzupełnij wszystkie wymagane pola"
+	},
+
+	"resetPassword": {
+		"title": "Reset hasła",
+		"subtitle": "Ustaw nowe hasło do swojego konta.",
+		"password": "Nowe hasło",
+		"confirmPassword": "Powtórz nowe hasło",
+		"submit": "Zmień hasło",
+		"saving": "Zapisywanie...",
+		"success": "Hasło zostało zmienione. Za chwilę nastąpi przekierowanie do logowania.",
+		"missingToken": "Brak tokena resetującego",
+		"passwordsNotMatch": "Hasła nie są takie same",
+		"passwordPolicy": "Hasło musi mieć min. 8 znaków, dużą i małą literę, cyfrę oraz znak specjalny.",
+		"error": "Nie udało się zmienić hasła",
+		"showPassword": "Pokaż hasło",
+		"hidePassword": "Ukryj hasło",
+		"sameAsCurrentPassword": "Nowe hasło nie może być takie samo jak obecne."
+	},
+
+	"dashboard": {
+		"title": "Kokpit",
+		"welcome": "Witaj w systemie SMI 👋"
+	},
+
+	"sidebar": {
+		"dashboard": "Dashboard",
+		"users": "Użytkownicy",
+		"emailTemplates": "Szablony email",
+		"profile": "Mój profil",
+		"language": "Język"
+	},
+
+	"topbar": {
+		"dashboard": "Dashboard",
+		"users": "Użytkownicy",
+		"emailTemplates": "Szablony email",
+		"profile": "Profil",
+		"logout": "Wyloguj",
+		"welcome": "Witaj",
+		"superAdmin": "Super Administrator",
+		"admin": "Administrator",
+		"user": "Użytkownik"
+	},
+
+	"profile": {
+		"title": "Mój profil",
+		"summaryTitle": "Profil użytkownika",
+		"editTitle": "Edytuj dane",
+		"editSubtitle": "Możesz edytować swoje dane profilowe oraz ustawienia powiadomień.",
+		"fullName": "Imię i nazwisko",
+		"email": "Email",
+		"phone": "Telefon",
+		"jobTitle": "Stanowisko",
+		"role": "Rola",
+		"lastLogin": "Ostatnie logowanie",
+		"notifications": "Powiadomienia",
+		"firstName": "Imię",
+		"lastName": "Nazwisko",
+		"notificationsEnabled": "Otrzymuj powiadomienia email",
+		"save": "Zapisz zmiany",
+		"saved": "Dane profilu zostały zapisane",
+		"saveError": "Nie udało się zapisać profilu",
+		"enabled": "WŁĄCZONE",
+		"disabled": "WYŁĄCZONE",
+		"superAdmin": "SUPER ADMIN",
+		"admin": "ADMIN",
+		"user": "USER",
+		"language": "Język"
+	},
+
+	"users": {
+		"createTitle": "Dodaj użytkownika",
+		"createSubtitle": "Hasło tymczasowe zostanie wygenerowane automatycznie i wysłane na email użytkownika.",
+		"email": "Email",
+		"firstName": "Imię",
+		"lastName": "Nazwisko",
+		"phone": "Telefon",
+		"jobTitle": "Stanowisko",
+		"role": "Rola",
+		"add": "Dodaj użytkownika",
+		"adding": "Dodawanie...",
+		"created": "Użytkownik został dodany",
+		"createError": "Nie udało się dodać użytkownika",
+		"title": "Użytkownicy",
+		"searchPlaceholder": "Szukaj użytkownika...",
+		"clearFilter": "Wyczyść filtr",
+		"found": "Znaleziono użytkowników: {count}",
+		"noResults": "Nie znaleziono użytkowników",
+		"notifications": "Powiadomienia",
+		"lastLogin": "Ostatnie logowanie",
+		"actions": "Akcje",
+		"enabled": "WŁĄCZONE",
+		"disabled": "WYŁĄCZONE",
+		"edit": "Edytuj",
+		"delete": "Usuń",
+		"resetPassword": "Resetuj hasło",
+		"updated": "Użytkownik został zaktualizowany",
+		"updateError": "Nie udało się zaktualizować użytkownika",
+		"deleted": "Użytkownik został usunięty",
+		"deleteError": "Nie udało się usunąć użytkownika",
+		"resetSent": "Nowe hasło tymczasowe zostało wysłane na email użytkownika",
+		"resetError": "Nie udało się zresetować hasła",
+		"deleteTitle": "Usunąć użytkownika?",
+		"deleteQuestion": "Czy na pewno chcesz usunąć użytkownika",
+		"cancel": "Anuluj",
+		"deleting": "Usuwanie...",
+		"editTitle": "Edytuj użytkownika",
+		"saving": "Zapisywanie...",
+		"saveChanges": "Zapisz zmiany",
+		"resetTitle": "Resetować hasło?",
+		"resetQuestion": "Czy na pewno chcesz wygenerować nowe hasło tymczasowe dla użytkownika",
+		"resetInfo": "Użytkownik otrzyma email z nowym hasłem i będzie musiał zmienić je po zalogowaniu.",
+		"resetting": "Resetowanie...",
+		"language": "Język"
+	},
+
+	
+
+	"emailTemplates": {
+		"title": "Szablony email",
+		"subtitle": "Edycja wiadomości wysyłanych automatycznie przez system.",
+		"listTitle": "Lista szablonów",
+		"selectTemplate": "Wybierz szablon z listy.",
+		"name": "Nazwa",
+		"subject": "Temat",
+		"bodyHtml": "Treść HTML",
+		"active": "Aktywny",
+		"inactive": "Nieaktywny",
+		"templateActive": "Szablon aktywny",
+		"variables": "Dostępne zmienne",
+		"preview": "Podgląd",
+		"save": "Zapisz szablon",
+		"saved": "Szablon został zapisany",
+		"fetchError": "Nie udało się pobrać szablonów",
+		"saveError": "Nie udało się zapisać szablonu",
+		"language": "Język"
+	  }
+}
