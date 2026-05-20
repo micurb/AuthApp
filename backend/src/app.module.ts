@@ -6,9 +6,10 @@ import { ProfileModule } from './profile/profile.module';
 import { UsersModule } from './users/users.module';
 import { MailerModule } from './mailer/mailer.module';
 import { EmailTemplatesModule } from './email-templates/email-templates.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
-  imports: [AuthModule, ProfileModule, UsersModule, MailerModule, EmailTemplatesModule],
+  imports: [AuthModule, ProfileModule, UsersModule, MailerModule, EmailTemplatesModule, SecurityModule],
   controllers: [AppController],
   providers: [AppService],
 })

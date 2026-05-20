@@ -259,4 +259,49 @@ export const defaultEmailTemplates = [
     `,
     isActive: true,
   },
+  // =========================
+// LOGIN NOTIFICATION
+// =========================
+
+{
+	key: EmailTemplateKey.LOGIN_NOTIFICATION,
+	language: 'pl',
+	name: 'Nowe logowanie',
+	subject: 'Nowe logowanie do konta',
+	bodyHtml: `
+		<h2>Nowe logowanie</h2>
+
+		<p>Witaj {{fullName}},</p>
+
+		<p>Wykryto nowe logowanie do Twojego konta.</p>
+
+		<p><strong>IP:</strong> {{ip}}</p>
+
+		<p><strong>Urządzenie:</strong> {{userAgent}}</p>
+
+		<p><strong>Data:</strong> {{loginDate}}</p>
+	`,
+	isActive: true,
+},
+
+{
+	key: EmailTemplateKey.LOGIN_NOTIFICATION,
+	language: 'en',
+	name: 'New login notification',
+	subject: 'New login to your account',
+	bodyHtml: `
+		<h2>New login</h2>
+
+		<p>Hello {{fullName}},</p>
+
+		<p>A new login to your account was detected.</p>
+
+		<p><strong>IP:</strong> {{ip}}</p>
+
+		<p><strong>Device:</strong> {{userAgent}}</p>
+
+		<p><strong>Date:</strong> {{loginDate}}</p>
+	`,
+	isActive: true,
+},
 ];

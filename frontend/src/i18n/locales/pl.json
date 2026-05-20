@@ -85,7 +85,8 @@
 		"users": "Użytkownicy",
 		"emailTemplates": "Szablony email",
 		"profile": "Mój profil",
-		"language": "Język"
+		"language": "Język",
+		"security": "Bezpieczeństwo"
 	},
 
 	"topbar": {
@@ -179,6 +180,27 @@
 		"next": "Następna",
 		"invalidPhone": "Numer telefonu może zawierać cyfry, spacje, +, -, () i mieć od 7 do 20 znaków"
 	},
+
+	"security": {
+		"title": "Bezpieczeństwo",
+		"subtitle": "Historia logowań i aktywność konta",
+		"loginLogs": "Historia logowań",
+		"loading": "Ładowanie logów...",
+		"noLogs": "Brak logów logowania",
+		"date": "Data",
+		"device": "Urządzenie",
+		"fetchError": "Nie udało się pobrać logów bezpieczeństwa",
+		"myLogins": "Moje logowania",
+		"allLogins": "Logowania użytkowników",
+		"adminLogsSubtitle": "Ostatnie logowania wszystkich użytkowników",
+		"search": "Wyszukaj",
+		"searchPlaceholder": "Email, imię lub nazwisko",
+		"user": "Użytkownik"
+	  },
+	  "pagination": {
+		"previous": "Poprzednia",
+		"next": "Następna"
+	  },
 
 	"emailTemplates": {
 		"title": "Szablony email",

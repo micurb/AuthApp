@@ -49,6 +49,11 @@ const menuItems = computed(() => {
 		path: "/profile",
 	});
 
+	items.push({
+		label: t("sidebar.security"),
+		path: "/security",
+	});
+
 	return items;
 });
 </script>
@@ -75,7 +80,8 @@ const menuItems = computed(() => {
 			</nav>
 
 			<div class="border-t border-gray-200 p-4">
-				<p class="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
+				<p
+					class="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
 					{{ t("sidebar.language") }}
 				</p>
 
@@ -92,7 +98,8 @@ const menuItems = computed(() => {
 	<aside
 		class="fixed top-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-gray-200 bg-white transition-transform lg:hidden"
 		:class="mobileOpen ? 'translate-x-0' : '-translate-x-full'">
-		<div class="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+		<div
+			class="flex h-16 items-center justify-between border-b border-gray-200 px-6">
 			<span class="text-lg font-semibold text-gray-900">
 				{{ t("app.name") }}
 			</span>
@@ -119,7 +126,8 @@ const menuItems = computed(() => {
 			</nav>
 
 			<div class="border-t border-gray-200 p-4">
-				<p class="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
+				<p
+					class="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
 					{{ t("sidebar.language") }}
 				</p>
 

@@ -47,6 +47,12 @@ const routes = [
   {
     path: '/reset-password',
     component: () => import('../views/ResetPasswordView.vue'),
+  },
+  {
+    path: "/security",
+    name: "security",
+    component: () => import("../views/SecurityView.vue"),
+    meta: { requiresAuth: true },
   }
 ]
 

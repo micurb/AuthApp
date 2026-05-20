@@ -154,6 +154,21 @@ export class AuthService {
 				userAgent: req?.headers?.["user-agent"] || null,
 			},
 		});
+		
+		try {
+			await this.mailerService.sendLoginNotificationEmail(
+				user.email,
+				{
+					fullName: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
+					ip: req?.ip,
+					userAgent: req?.headers?.["user-agent"],
+					loginDate: new Date().toLocaleString(),
+				},
+				user.preferredLanguage
+			);
+		} catch (error) {
+			console.error("Nie udało się wysłać emaila o logowaniu:", error);
+		}
 
 		const payload = {
 			sub: user.id,

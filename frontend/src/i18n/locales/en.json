@@ -85,7 +85,8 @@
 		"users": "Users",
 		"emailTemplates": "Email Templates",
 		"profile": "My Profile",
-		"language": "Language"
+		"language": "Language",
+		"security": "Security"
 	},
 
 	"topbar": {
@@ -179,6 +180,26 @@
 		"next": "Next",
 		"invalidPhone": "Phone number can contain digits, spaces, +, -, () and must be 7 to 20 characters long"
 	},
+	"security": {
+		"title": "Security",
+		"subtitle": "Login history and account activity",
+		"loginLogs": "Login history",
+		"loading": "Loading logs...",
+		"noLogs": "No login logs",
+		"date": "Date",
+		"device": "Device",
+		"fetchError": "Failed to load security logs",
+		"myLogins": "My logins",
+		"allLogins": "Users logins",
+		"adminLogsSubtitle": "Recent logins of all users",
+		"search": "Search",
+		"searchPlaceholder": "Email, first name or last name",
+		"user": "User"
+	  },
+	  "pagination": {
+		"previous": "Previous",
+		"next": "Next"
+	  },
 
 	"emailTemplates": {
 		"title": "Email templates",
