@@ -24,6 +24,10 @@ defineProps({
 		type: Boolean,
 		default: false,
 	},
+	required: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -31,10 +35,10 @@ const emit = defineEmits(["update:modelValue"]);
 
 <template>
 	<div>
-		<label
-			v-if="label"
-			class="mb-1 block text-sm font-medium text-gray-700">
+		<label v-if="label" class="mb-1 block text-sm font-medium text-gray-700">
 			{{ label }}
+
+			<span v-if="required" class="text-red-500">*</span>
 		</label>
 
 		<div class="relative">
@@ -54,7 +58,7 @@ const emit = defineEmits(["update:modelValue"]);
 
 			<div
 				v-if="$slots.right"
-				class="absolute top-1/2 right-3 -translate-y-1/2">
+				class="absolute inset-y-0 right-3 flex items-center">
 				<slot name="right" />
 			</div>
 		</div>

@@ -17,7 +17,9 @@
 		"forgotPassword": "Przypomnij hasło",
 		"invalidCredentials": "Nieprawidłowy email lub hasło",
 		"invalidCredentialsWithAttempts": "Nieprawidłowe hasło. Pozostała liczba prób: {count}.",
-		"accountLocked": "Konto zostało tymczasowo zablokowane. Spróbuj ponownie później lub zresetuj hasło."
+		"accountLocked": "Konto zostało tymczasowo zablokowane. Spróbuj ponownie później lub zresetuj hasło.",
+		"loggingIn": "Logowanie...",
+		"requiredPassword": "Hasło jest wymagane"
 	},
 
 	"forgotPassword": {
@@ -50,7 +52,9 @@
 	"validation": {
 		"requiredEmail": "Email jest wymagany",
 		"invalidEmail": "Podaj poprawny adres email",
-		"requiredFields": "Uzupełnij wszystkie wymagane pola"
+		"requiredFields": "Uzupełnij wszystkie wymagane pola",
+		"requiredPassword": "Hasło jest wymagane",
+		"invalidPhone": "Numer telefonu może zawierać cyfry, spacje, +, -, () i mieć od 7 do 20 znaków"
 	},
 
 	"resetPassword": {
@@ -67,7 +71,8 @@
 		"error": "Nie udało się zmienić hasła",
 		"showPassword": "Pokaż hasło",
 		"hidePassword": "Ukryj hasło",
-		"sameAsCurrentPassword": "Nowe hasło nie może być takie samo jak obecne."
+		"sameAsCurrentPassword": "Nowe hasło nie może być takie samo jak obecne.",
+		"invalidOrExpiredToken": "Link resetujący jest nieprawidłowy, wygasł albo został już użyty."
 	},
 
 	"dashboard": {
@@ -118,7 +123,11 @@
 		"superAdmin": "SUPER ADMIN",
 		"admin": "ADMIN",
 		"user": "USER",
-		"language": "Język"
+		"language": "Język",
+		"security": "Bezpieczeństwo",
+		"securitySubtitle": "Zarządzaj hasłem i ustawieniami bezpieczeństwa konta.",
+		"changePassword": "Zmień hasło",
+		"passwordChanged": "Hasło zostało zmienione."
 	},
 
 	"users": {
@@ -164,10 +173,12 @@
 		"resetQuestion": "Czy na pewno chcesz wygenerować nowe hasło tymczasowe dla użytkownika",
 		"resetInfo": "Użytkownik otrzyma email z nowym hasłem i będzie musiał zmienić je po zalogowaniu.",
 		"resetting": "Resetowanie...",
-		"language": "Język"
+		"language": "Język",
+		"pagination": "Strona {page} z {total}",
+		"previous": "Poprzednia",
+		"next": "Następna",
+		"invalidPhone": "Numer telefonu może zawierać cyfry, spacje, +, -, () i mieć od 7 do 20 znaków"
 	},
-
-	
 
 	"emailTemplates": {
 		"title": "Szablony email",
@@ -187,5 +198,5 @@
 		"fetchError": "Nie udało się pobrać szablonów",
 		"saveError": "Nie udało się zapisać szablonu",
 		"language": "Język"
-	  }
+	}
 }

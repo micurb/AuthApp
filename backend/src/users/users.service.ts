@@ -23,7 +23,10 @@ export class UsersService {
     return password;
   }
 
-  private getFullName(user: { firstName?: string | null; lastName?: string | null }) {
+  private getFullName(user: {
+    firstName?: string | null;
+    lastName?: string | null;
+  }) {
     return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
   }
 
@@ -174,6 +177,11 @@ export class UsersService {
   }
 
   async resetUserPassword(id: number, currentUserId: number) {
+    if (id === currentUserId) {
+      throw new BadRequestException(
+        'Nie możesz resetować własnego hasła z panelu użytkowników',
+      );
+    }
     const userToReset = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -202,7 +210,7 @@ export class UsersService {
     });
 
     try {
-      await this.mailerService.sendAccountCreatedEmail(
+      await this.mailerService.sendAdminPasswordResetEmail(
         userToReset.email,
         temporaryPassword,
         this.getFullName(userToReset),

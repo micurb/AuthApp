@@ -1,10 +1,15 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
+import BaseSelect from "../components/ui/BaseSelect.vue";
+import BaseModal from "../components/ui/BaseModal.vue";
+import BaseBadge from "../components/ui/BaseBadge.vue";
+import BaseCard from "../components/ui/BaseCard.vue";
 import { api } from "../api";
 import { useAuthStore } from "../stores/auth";
 
@@ -15,7 +20,17 @@ const search = ref("");
 
 const error = ref(null);
 const success = ref(null);
-const loading = ref(false);
+const createLoading = ref(false);
+const editLoading = ref(false);
+const deleteLoading = ref(false);
+const resetLoading = ref(false);
+
+const editError = ref(null);
+
+const fieldErrors = ref({
+	email: null,
+	phone: null,
+});
 
 const showDeleteModal = ref(false);
 const userToDelete = ref(null);
@@ -26,12 +41,6 @@ const userToResetPassword = ref(null);
 const showEditModal = ref(false);
 
 const auth = useAuthStore();
-
-const inputClass =
-	"w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 focus:outline-hidden";
-
-const inputErrorClass =
-	"w-full rounded-lg border border-red-500 px-4 py-2 text-sm text-gray-800 transition focus:border-red-500 focus:ring-4 focus:ring-red-100 focus:outline-hidden";
 
 const form = ref({
 	email: "",
@@ -53,9 +62,34 @@ const editForm = ref({
 	preferredLanguage: "pl",
 });
 
+const roleOptions = [
+	{ value: "USER", label: "USER" },
+	{ value: "ADMIN", label: "ADMIN" },
+];
+
+const languageOptions = [
+	{ value: "pl", label: "Polski" },
+	{ value: "en", label: "English" },
+];
+
+const phoneRegex = /^[0-9+\-\s()]{7,20}$/;
+
+const emailHasError = computed(() => {
+	return Boolean(fieldErrors.value.email);
+});
+
+const phoneHasError = computed(() => {
+	return Boolean(fieldErrors.value.phone);
+});
+
 const clearMessages = () => {
 	error.value = null;
 	success.value = null;
+
+	fieldErrors.value = {
+		email: null,
+		phone: null,
+	};
 };
 
 const showSuccess = message => {
@@ -103,19 +137,23 @@ const loadUsers = async () => {
 const createUser = async () => {
 	clearMessages();
 
-	if (!form.value.email) {
-		error.value = t("validation.requiredEmail");
-		return;
-	}
-
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-	if (!emailRegex.test(form.value.email)) {
-		error.value = t("validation.invalidEmail");
+	if (!form.value.email) {
+		fieldErrors.value.email = t("validation.requiredEmail");
+	} else if (!emailRegex.test(form.value.email)) {
+		fieldErrors.value.email = t("validation.invalidEmail");
+	}
+
+	if (form.value.phone && !phoneRegex.test(form.value.phone)) {
+		fieldErrors.value.phone = t("validation.invalidPhone");
+	}
+
+	if (fieldErrors.value.email || fieldErrors.value.phone) {
 		return;
 	}
 
-	loading.value = true;
+	createLoading.value = true;
 
 	try {
 		await api.post("/users", form.value);
@@ -134,9 +172,15 @@ const createUser = async () => {
 
 		await loadUsers();
 	} catch (err) {
-		error.value = err.response?.data?.message || t("users.createError");
+		const message = err.response?.data?.message || t("users.createError");
+
+		if (message.toLowerCase().includes("email")) {
+			fieldErrors.value.email = message;
+		} else {
+			error.value = message;
+		}
 	} finally {
-		loading.value = false;
+		createLoading.value = false;
 	}
 };
 
@@ -150,6 +194,24 @@ const filteredUsers = computed(() => {
 			user.lastName?.toLowerCase().includes(query)
 		);
 	});
+});
+
+const currentPage = ref(1);
+const perPage = 10;
+
+const totalPages = computed(() => {
+	return Math.max(1, Math.ceil(filteredUsers.value.length / perPage));
+});
+
+const paginatedUsers = computed(() => {
+	const start = (currentPage.value - 1) * perPage;
+	const end = start + perPage;
+
+	return filteredUsers.value.slice(start, end);
+});
+
+watch(search, () => {
+	currentPage.value = 1;
 });
 
 const openDeleteModal = user => {
@@ -166,19 +228,23 @@ const confirmDeleteUser = async () => {
 	if (!userToDelete.value) return;
 
 	clearMessages();
-	loading.value = true;
+	deleteLoading.value = true;
 
 	try {
 		await api.delete(`/users/${userToDelete.value.id}`);
 
 		await loadUsers();
 
+		if (currentPage.value > totalPages.value) {
+			currentPage.value = totalPages.value;
+		}
+
 		showSuccess(t("users.deleted"));
 		closeDeleteModal();
 	} catch (err) {
 		error.value = err.response?.data?.message || t("users.deleteError");
 	} finally {
-		loading.value = false;
+		deleteLoading.value = false;
 	}
 };
 
@@ -196,7 +262,7 @@ const confirmResetPassword = async () => {
 	if (!userToResetPassword.value) return;
 
 	clearMessages();
-	loading.value = true;
+	resetLoading.value = true;
 
 	try {
 		await api.post(`/users/${userToResetPassword.value.id}/reset-password`);
@@ -209,11 +275,13 @@ const confirmResetPassword = async () => {
 	} catch (err) {
 		error.value = err.response?.data?.message || t("users.resetError");
 	} finally {
-		loading.value = false;
+		resetLoading.value = false;
 	}
 };
 
 const openEditModal = user => {
+	editError.value = null;
+
 	editForm.value = {
 		id: user.id,
 		firstName: user.firstName || "",
@@ -228,12 +296,13 @@ const openEditModal = user => {
 };
 
 const closeEditModal = () => {
+	editError.value = null;
 	showEditModal.value = false;
 };
 
 const updateUser = async () => {
 	clearMessages();
-	loading.value = true;
+	editLoading.value = true;
 
 	try {
 		await api.patch(`/users/${editForm.value.id}`, {
@@ -251,9 +320,9 @@ const updateUser = async () => {
 
 		closeEditModal();
 	} catch (err) {
-		error.value = err.response?.data?.message || t("users.updateError");
+		editError.value = err.response?.data?.message || t("users.updateError");
 	} finally {
-		loading.value = false;
+		editLoading.value = false;
 	}
 };
 
@@ -262,7 +331,7 @@ onMounted(loadUsers);
 
 <template>
 	<DashboardLayout>
-		<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+		<BaseCard class="mb-6">
 			<h2 class="mb-2 text-lg font-semibold text-gray-900">
 				{{ t("users.createTitle") }}
 			</h2>
@@ -274,6 +343,18 @@ onMounted(loadUsers);
 			<BaseAlert v-if="error" type="error" :message="error" class="mb-4" />
 
 			<BaseAlert
+				v-if="fieldErrors.email"
+				type="error"
+				:message="fieldErrors.email"
+				class="mb-4" />
+
+			<BaseAlert
+				v-if="fieldErrors.phone"
+				type="error"
+				:message="fieldErrors.phone"
+				class="mb-4" />
+
+			<BaseAlert
 				v-if="success"
 				type="success"
 				:message="success"
@@ -283,60 +364,49 @@ onMounted(loadUsers);
 				@submit.prevent="createUser"
 				novalidate
 				class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-				<input
+				<BaseInput
 					v-model="form.email"
 					type="text"
 					:placeholder="t('users.email')"
-					:class="error ? inputErrorClass : inputClass" />
+					:error="emailHasError" />
 
-				<input
+				<BaseInput
 					v-model="form.firstName"
-					:placeholder="t('users.firstName')"
-					:class="inputClass" />
+					:placeholder="t('users.firstName')" />
 
-				<input
-					v-model="form.lastName"
-					:placeholder="t('users.lastName')"
-					:class="inputClass" />
+				<BaseInput v-model="form.lastName" :placeholder="t('users.lastName')" />
 
-				<input
+				<BaseInput
 					v-model="form.phone"
 					:placeholder="t('users.phone')"
-					:class="inputClass" />
+					:error="phoneHasError" />
 
-				<input
-					v-model="form.jobTitle"
-					:placeholder="t('users.jobTitle')"
-					:class="inputClass" />
+				<BaseInput v-model="form.jobTitle" :placeholder="t('users.jobTitle')" />
 
-				<select v-model="form.role" :class="inputClass">
-					<option value="USER">USER</option>
-					<option value="ADMIN">ADMIN</option>
-				</select>
+				<BaseSelect v-model="form.role" :options="roleOptions" />
 
-				<select v-model="form.preferredLanguage" :class="inputClass">
-					<option value="pl">Polski</option>
-					<option value="en">English</option>
-				</select>
+				<BaseSelect
+					v-model="form.preferredLanguage"
+					:options="languageOptions" />
 
-				<BaseButton type="submit" variant="primary" :disabled="loading">
-					{{ loading ? t("users.adding") : t("users.add") }}
+				<BaseButton type="submit" variant="primary" :disabled="createLoading">
+					{{ createLoading ? t("users.adding") : t("users.add") }}
 				</BaseButton>
 			</form>
-		</div>
+		</BaseCard>
 
-		<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+		<BaseCard class="mb-6">
 			<h1 class="text-2xl font-semibold text-gray-900">
 				{{ t("users.title") }}
 			</h1>
 
 			<div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-				<input
-					v-model="search"
-					type="text"
-					:placeholder="t('users.searchPlaceholder')"
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 focus:outline-hidden md:max-w-sm" />
-
+				<div class="w-full md:max-w-sm">
+					<BaseInput
+						v-model="search"
+						type="text"
+						:placeholder="t('users.searchPlaceholder')" />
+				</div>
 				<BaseButton type="button" variant="secondary" @click="search = ''">
 					{{ t("users.clearFilter") }}
 				</BaseButton>
@@ -345,24 +415,25 @@ onMounted(loadUsers);
 			<p class="mt-3 text-sm text-gray-500">
 				{{ t("users.found", { count: filteredUsers.length }) }}
 			</p>
-		</div>
+		</BaseCard>
 
-		<div
-			class="overflow-x-auto rounded-2xl border border-gray-200 bg-white p-5">
-			<div class="custom-scrollbar max-h-[600px] overflow-auto pr-2">
-				<table class="mb-2 w-full min-w-[900px] text-left text-sm">
-					<thead class="sticky top-0 z-10 border-b bg-white text-gray-500">
+		<BaseCard padding="none">
+			<div
+				class="custom-scrollbar relative m-5 max-h-[600px] overflow-auto pr-2">
+				<table class="w-full min-w-[900px] border-collapse text-left text-sm">
+					<thead
+						class="sticky top-0 z-20 border-b border-gray-200 bg-white text-gray-500">
 						<tr>
-							<th class="py-3">{{ t("users.email") }}</th>
-							<th>{{ t("users.firstName") }}</th>
-							<th>{{ t("users.lastName") }}</th>
-							<th>{{ t("users.phone") }}</th>
-							<th>{{ t("users.jobTitle") }}</th>
-							<th>{{ t("users.role") }}</th>
-							<th>{{ t("users.language") }}</th>
-							<th>{{ t("users.notifications") }}</th>
-							<th>{{ t("users.lastLogin") }}</th>
-							<th>{{ t("users.actions") }}</th>
+							<th class="bg-white py-3">{{ t("users.email") }}</th>
+							<th class="bg-white">{{ t("users.firstName") }}</th>
+							<th class="bg-white">{{ t("users.lastName") }}</th>
+							<th class="bg-white">{{ t("users.phone") }}</th>
+							<th class="bg-white">{{ t("users.jobTitle") }}</th>
+							<th class="bg-white">{{ t("users.role") }}</th>
+							<th class="bg-white">{{ t("users.language") }}</th>
+							<th class="bg-white">{{ t("users.notifications") }}</th>
+							<th class="bg-white">{{ t("users.lastLogin") }}</th>
+							<th class="bg-white">{{ t("users.actions") }}</th>
 						</tr>
 					</thead>
 
@@ -374,9 +445,9 @@ onMounted(loadUsers);
 						</tr>
 
 						<tr
-							v-for="user in filteredUsers"
+							v-for="user in paginatedUsers"
 							:key="user.id"
-							class="border-b hover:bg-gray-50">
+							class="border-b border-gray-200 hover:bg-gray-50">
 							<td class="py-3">{{ user.email }}</td>
 							<td>{{ user.firstName || "-" }}</td>
 							<td>{{ user.lastName || "-" }}</td>
@@ -384,23 +455,15 @@ onMounted(loadUsers);
 							<td>{{ user.jobTitle || "-" }}</td>
 
 							<td>
-								<span
-									v-if="user.isSuperAdmin"
-									class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+								<BaseBadge v-if="user.isSuperAdmin" variant="purple">
 									SUPER ADMIN
-								</span>
+								</BaseBadge>
 
-								<span
-									v-else-if="user.role === 'ADMIN'"
-									class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+								<BaseBadge v-else-if="user.role === 'ADMIN'" variant="info">
 									ADMIN
-								</span>
+								</BaseBadge>
 
-								<span
-									v-else
-									class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-									USER
-								</span>
+								<BaseBadge v-else> USER </BaseBadge>
 							</td>
 
 							<td>
@@ -408,17 +471,13 @@ onMounted(loadUsers);
 							</td>
 
 							<td>
-								<span
-									v-if="user.notificationsEnabled"
-									class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+								<BaseBadge v-if="user.notificationsEnabled" variant="success">
 									{{ t("users.enabled") }}
-								</span>
+								</BaseBadge>
 
-								<span
-									v-else
-									class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+								<BaseBadge v-else>
 									{{ t("users.disabled") }}
-								</span>
+								</BaseBadge>
 							</td>
 
 							<td>
@@ -431,189 +490,172 @@ onMounted(loadUsers);
 
 							<td>
 								<div class="flex items-center gap-2">
-									<button
+									<BaseButton
 										v-if="canEditUser(user)"
-										@click="openEditModal(user)"
-										class="cursor-pointer rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-100 hover:text-blue-700">
+										size="sm"
+										variant="secondary"
+										@click="openEditModal(user)">
 										{{ t("users.edit") }}
-									</button>
+									</BaseButton>
 
-									<button
+									<BaseButton
 										v-if="canResetPassword(user)"
-										@click="openResetPasswordModal(user)"
-										class="cursor-pointer rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 hover:text-amber-800">
+										size="sm"
+										variant="warning"
+										@click="openResetPasswordModal(user)">
 										{{ t("users.resetPassword") }}
-									</button>
+									</BaseButton>
 
-									<button
+									<BaseButton
 										v-if="canDeleteUser(user)"
-										@click="openDeleteModal(user)"
-										class="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-100 hover:text-red-700">
+										size="sm"
+										variant="danger"
+										@click="openDeleteModal(user)">
 										{{ t("users.delete") }}
-									</button>
+									</BaseButton>
 								</div>
 							</td>
 						</tr>
 					</tbody>
 				</table>
-			</div>
-		</div>
+				<div
+					class="flex flex-col items-center justify-between gap-4 border-t border-gray-200 px-5 py-4 sm:flex-row">
+					<p class="text-sm text-gray-500">
+						{{
+							t("users.pagination", {
+								page: currentPage,
+								total: totalPages,
+							})
+						}}
+					</p>
 
-		<div
-			v-if="showDeleteModal"
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-			<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-				<h3 class="text-lg font-semibold text-gray-900">
-					{{ t("users.deleteTitle") }}
-				</h3>
+					<div class="flex items-center gap-2">
+						<BaseButton
+							type="button"
+							size="sm"
+							variant="secondary"
+							:disabled="currentPage === 1"
+							@click="currentPage--">
+							{{ t("users.previous") }}
+						</BaseButton>
 
-				<p class="mt-2 text-sm text-gray-500">
-					{{ t("users.deleteQuestion") }}
-					<span class="font-medium text-gray-900">
-						{{ userToDelete?.email }}
-					</span>
-					?
-				</p>
-
-				<div class="mt-6 flex justify-end gap-3">
-					<button
-						type="button"
-						@click="closeDeleteModal"
-						class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100">
-						{{ t("users.cancel") }}
-					</button>
-
-					<button
-						type="button"
-						@click="confirmDeleteUser"
-						:disabled="loading"
-						class="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
-						{{ loading ? t("users.deleting") : t("users.delete") }}
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<div
-			v-if="showEditModal"
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-			<div class="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
-				<h3 class="text-lg font-semibold text-gray-900">
-					{{ t("users.editTitle") }}
-				</h3>
-
-				<div class="mt-5 grid gap-4 md:grid-cols-2">
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.firstName") }}
-						</label>
-
-						<input v-model="editForm.firstName" :class="inputClass" />
-					</div>
-
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.lastName") }}
-						</label>
-
-						<input v-model="editForm.lastName" :class="inputClass" />
-					</div>
-
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.phone") }}
-						</label>
-
-						<input v-model="editForm.phone" :class="inputClass" />
-					</div>
-
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.jobTitle") }}
-						</label>
-
-						<input v-model="editForm.jobTitle" :class="inputClass" />
-					</div>
-
-					<div class="md:col-span-2">
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.role") }}
-						</label>
-
-						<select v-model="editForm.role" :class="inputClass">
-							<option value="USER">USER</option>
-							<option value="ADMIN">ADMIN</option>
-						</select>
-					</div>
-
-					<div class="md:col-span-2">
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("users.language") }}
-						</label>
-
-						<select v-model="editForm.preferredLanguage" :class="inputClass">
-							<option value="pl">Polski</option>
-							<option value="en">English</option>
-						</select>
+						<BaseButton
+							type="button"
+							size="sm"
+							variant="secondary"
+							:disabled="currentPage === totalPages"
+							@click="currentPage++">
+							{{ t("users.next") }}
+						</BaseButton>
 					</div>
 				</div>
-
-				<div class="mt-6 flex justify-end gap-3">
-					<button
-						type="button"
-						@click="closeEditModal"
-						class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100">
-						{{ t("users.cancel") }}
-					</button>
-
-					<button
-						type="button"
-						@click="updateUser"
-						:disabled="loading"
-						class="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-						{{ loading ? t("users.saving") : t("users.saveChanges") }}
-					</button>
-				</div>
 			</div>
-		</div>
+		</BaseCard>
 
-		<div
-			v-if="showResetPasswordModal"
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-			<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-				<h3 class="text-lg font-semibold text-gray-900">
-					{{ t("users.resetTitle") }}
-				</h3>
+		<BaseModal
+			v-model="showDeleteModal"
+			:title="t('users.deleteTitle')"
+			size="sm">
+			<p class="text-sm text-gray-500">
+				{{ t("users.deleteQuestion") }}
 
-				<p class="mt-2 text-sm text-gray-500">
-					{{ t("users.resetQuestion") }}
-					<span class="font-medium text-gray-900">
-						{{ userToResetPassword?.email }}
-					</span>
-					?
-				</p>
+				<span class="font-medium text-gray-900">
+					{{ userToDelete?.email }}
+				</span>
+				?
+			</p>
 
-				<p class="mt-3 text-sm text-amber-700">
-					{{ t("users.resetInfo") }}
-				</p>
+			<template #footer>
+				<BaseButton type="button" variant="secondary" @click="closeDeleteModal">
+					{{ t("users.cancel") }}
+				</BaseButton>
 
-				<div class="mt-6 flex justify-end gap-3">
-					<button
-						type="button"
-						@click="closeResetPasswordModal"
-						class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100">
-						{{ t("users.cancel") }}
-					</button>
+				<BaseButton
+					type="button"
+					variant="danger"
+					:disabled="deleteLoading"
+					@click="confirmDeleteUser">
+					{{ deleteLoading ? t("users.deleting") : t("users.delete") }}
+				</BaseButton>
+			</template>
+		</BaseModal>
 
-					<button
-						type="button"
-						@click="confirmResetPassword"
-						:disabled="loading"
-						class="cursor-pointer rounded-lg bg-amber-600 px-4 py-2 text-sm text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">
-						{{ loading ? t("users.resetting") : t("users.resetPassword") }}
-					</button>
-				</div>
+		<BaseModal v-model="showEditModal" :title="t('users.editTitle')" size="md">
+			<BaseAlert
+				v-if="editError"
+				type="error"
+				:message="editError"
+				class="mb-4" />
+			<div class="grid gap-4 md:grid-cols-2">
+				<BaseInput v-model="editForm.firstName" :label="t('users.firstName')" />
+
+				<BaseInput v-model="editForm.lastName" :label="t('users.lastName')" />
+
+				<BaseInput v-model="editForm.phone" :label="t('users.phone')" />
+
+				<BaseInput v-model="editForm.jobTitle" :label="t('users.jobTitle')" />
+
+				<BaseSelect
+					v-model="editForm.role"
+					:label="t('users.role')"
+					:options="roleOptions"
+					class="md:col-span-2" />
+
+				<BaseSelect
+					v-model="editForm.preferredLanguage"
+					:label="t('users.language')"
+					:options="languageOptions"
+					class="md:col-span-2" />
 			</div>
-		</div>
+
+			<template #footer>
+				<BaseButton type="button" variant="secondary" @click="closeEditModal">
+					{{ t("users.cancel") }}
+				</BaseButton>
+
+				<BaseButton
+					type="button"
+					variant="primary"
+					:disabled="editLoading"
+					@click="updateUser">
+					{{ editLoading ? t("users.saving") : t("users.saveChanges") }}
+				</BaseButton>
+			</template>
+		</BaseModal>
+
+		<BaseModal
+			v-model="showResetPasswordModal"
+			:title="t('users.resetTitle')"
+			size="sm">
+			<p class="text-sm text-gray-500">
+				{{ t("users.resetQuestion") }}
+
+				<span class="font-medium text-gray-900">
+					{{ userToResetPassword?.email }}
+				</span>
+				?
+			</p>
+
+			<p class="mt-3 text-sm text-amber-700">
+				{{ t("users.resetInfo") }}
+			</p>
+
+			<template #footer>
+				<BaseButton
+					type="button"
+					variant="secondary"
+					@click="closeResetPasswordModal">
+					{{ t("users.cancel") }}
+				</BaseButton>
+
+				<BaseButton
+					type="button"
+					variant="warning"
+					:disabled="resetLoading"
+					@click="confirmResetPassword">
+					{{ resetLoading ? t("users.resetting") : t("users.resetPassword") }}
+				</BaseButton>
+			</template>
+		</BaseModal>
 	</DashboardLayout>
 </template>

@@ -6,6 +6,7 @@ import { useI18n } from "vue-i18n";
 import AuthLayout from "../layouts/AuthLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
 import { api } from "../api";
 
 const { t } = useI18n();
@@ -16,8 +17,8 @@ const errorKey = ref(null);
 const validationError = ref(null);
 const loading = ref(false);
 
-const isValidEmail = email => {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidEmail = value => {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 };
 
 const submit = async () => {
@@ -66,24 +67,13 @@ const submit = async () => {
 
 			<form @submit.prevent="submit">
 				<div class="space-y-5">
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("forgotPassword.email") }}
-							<span class="text-red-500">*</span>
-						</label>
-
-						<input
-							v-model="email"
-							type="email"
-							:placeholder="t('forgotPassword.emailPlaceholder')"
-							:class="[
-								'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
-								validationError
-									? 'border-red-500 focus:border-red-500 focus:ring-red-100'
-									: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
-							]" />
-					</div>
+					<BaseInput
+						v-model="email"
+						type="email"
+						:label="t('forgotPassword.email')"
+						:placeholder="t('forgotPassword.emailPlaceholder')"
+						:error="Boolean(validationError)"
+						required />
 
 					<BaseAlert
 						v-if="validationError || errorKey"

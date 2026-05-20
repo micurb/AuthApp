@@ -5,12 +5,18 @@ import { useI18n } from "vue-i18n";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
+import BaseTextarea from "../components/ui/BaseTextarea.vue";
+import BaseCheckbox from "../components/ui/BaseCheckbox.vue";
+import BaseCard from "../components/ui/BaseCard.vue";
+import BaseBadge from "../components/ui/BaseBadge.vue";
 import { api } from "../api";
 
 const { t } = useI18n();
 
 const templates = ref([]);
-const loading = ref(false);
+const saveLoading = ref(false);
+const fetchLoading = ref(false);
 const error = ref("");
 const success = ref("");
 
@@ -49,7 +55,7 @@ const previewHtml = computed(() => {
 });
 
 const fetchTemplates = async () => {
-	loading.value = true;
+	fetchLoading.value = true;
 	error.value = "";
 
 	try {
@@ -58,7 +64,7 @@ const fetchTemplates = async () => {
 	} catch (err) {
 		error.value = err.response?.data?.message || t("emailTemplates.fetchError");
 	} finally {
-		loading.value = false;
+		fetchLoading.value = false;
 	}
 };
 
@@ -79,7 +85,7 @@ const selectTemplate = template => {
 const saveTemplate = async () => {
 	if (!selectedTemplate.value) return;
 
-	loading.value = true;
+	saveLoading.value = true;
 	error.value = "";
 	success.value = "";
 
@@ -111,7 +117,7 @@ const saveTemplate = async () => {
 	} catch (err) {
 		error.value = err.response?.data?.message || t("emailTemplates.saveError");
 	} finally {
-		loading.value = false;
+		saveLoading.value = false;
 	}
 };
 
@@ -143,7 +149,7 @@ const filteredTemplates = computed(() => {
 		<BaseAlert v-if="success" type="success" :message="success" class="mb-4" />
 
 		<div class="grid gap-6 lg:grid-cols-3">
-			<div class="rounded-2xl border border-gray-200 bg-white">
+			<BaseCard no-padding class="h-fit lg:sticky lg:top-6">
 				<div class="border-b border-gray-200 px-5 py-4">
 					<h2 class="mb-3 font-semibold text-gray-900">
 						{{ t("emailTemplates.listTitle") }}
@@ -201,79 +207,49 @@ const filteredTemplates = computed(() => {
 						<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
 							<span>{{ template.key }}</span>
 
-							<span
-								class="rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-gray-600">
+							<BaseBadge>
 								{{ template.language?.toUpperCase() || "PL" }}
-							</span>
+							</BaseBadge>
 						</div>
 
 						<div class="mt-2">
-							<span
-								class="rounded-full px-2 py-1 text-xs font-semibold"
-								:class="
-									template.isActive
-										? 'bg-green-100 text-green-700'
-										: 'bg-gray-100 text-gray-600'
-								">
+							<BaseBadge :variant="template.isActive ? 'success' : 'default'">
 								{{
 									template.isActive
 										? t("emailTemplates.active")
 										: t("emailTemplates.inactive")
 								}}
-							</span>
+							</BaseBadge>
 						</div>
 					</button>
 				</div>
-			</div>
+			</BaseCard>
 
-			<div
-				class="rounded-2xl border border-gray-200 bg-white p-6 lg:col-span-2">
+			<BaseCard class="lg:col-span-2">
 				<div v-if="!selectedTemplate" class="text-sm text-gray-500">
 					{{ t("emailTemplates.selectTemplate") }}
 				</div>
 
 				<form v-else @submit.prevent="saveTemplate" class="space-y-5">
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("emailTemplates.name") }}
-						</label>
+					<BaseInput
+						v-model="form.name"
+						type="text"
+						:label="t('emailTemplates.name')" />
 
-						<input
-							v-model="form.name"
-							type="text"
-							class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-					</div>
+					<BaseInput
+						v-model="form.subject"
+						type="text"
+						:label="t('emailTemplates.subject')" />
 
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("emailTemplates.subject") }}
-						</label>
+					<BaseTextarea
+						v-model="form.bodyHtml"
+						:label="t('emailTemplates.bodyHtml')"
+						rows="14"
+						monospace />
 
-						<input
-							v-model="form.subject"
-							type="text"
-							class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-					</div>
-
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">
-							{{ t("emailTemplates.bodyHtml") }}
-						</label>
-
-						<textarea
-							v-model="form.bodyHtml"
-							rows="14"
-							class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none" />
-					</div>
-
-					<label class="flex items-center gap-2 text-sm text-gray-700">
-						<input
-							v-model="form.isActive"
-							type="checkbox"
-							class="rounded border-gray-300" />
-
-						{{ t("emailTemplates.templateActive") }}
-					</label>
+					<BaseCheckbox
+						v-model="form.isActive"
+						:label="t('emailTemplates.templateActive')" />
 
 					<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
 						<div class="mb-2 text-sm font-medium text-gray-700">
@@ -299,21 +275,27 @@ const filteredTemplates = computed(() => {
 						</div>
 					</div>
 
-					<div class="rounded-xl border border-gray-200 p-4">
+					<BaseCard class="p-5">
 						<div class="mb-3 text-sm font-medium text-gray-700">
 							{{ t("emailTemplates.preview") }}
 						</div>
 
-						<div class="prose max-w-none text-sm" v-html="previewHtml" />
-					</div>
+						<div
+							class="prose max-h-[500px] overflow-auto max-w-none text-sm"
+							v-html="previewHtml" />
+					</BaseCard>
 
 					<div class="flex justify-end">
-						<BaseButton type="submit" variant="primary" :disabled="loading">
-							{{ t("emailTemplates.save") }}
+						<BaseButton type="submit" variant="primary" :disabled="saveLoading">
+							{{
+								saveLoading
+									? t("emailTemplates.saving")
+									: t("emailTemplates.save")
+							}}
 						</BaseButton>
 					</div>
 				</form>
-			</div>
+			</BaseCard>
 		</div>
 	</DashboardLayout>
 </template>

@@ -8,6 +8,7 @@ import { useAuthStore } from "../stores/auth";
 import AuthLayout from "../layouts/AuthLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
 import LanguageSwitcher from "../components/common/LanguageSwitcher.vue";
 
 const { t } = useI18n();
@@ -29,6 +30,8 @@ const isValidEmail = value => {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 };
 
+const loading = ref(false);
+
 const submit = async () => {
 	emailErrorKey.value = null;
 	passwordErrorKey.value = null;
@@ -44,7 +47,14 @@ const submit = async () => {
 		return;
 	}
 
+	if (!password.value) {
+		passwordErrorKey.value = "validation.requiredPassword";
+		return;
+	}
+
 	try {
+		loading.value = true;
+
 		await auth.login(email.value, password.value);
 
 		if (auth.mustChangePassword) {
@@ -72,6 +82,8 @@ const submit = async () => {
 		}
 
 		passwordErrorKey.value = "login.invalidCredentials";
+	} finally {
+		loading.value = false;
 	}
 };
 </script>
@@ -92,46 +104,22 @@ const submit = async () => {
 
 			<form @submit.prevent="submit">
 				<div class="space-y-5">
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("login.email") }}
-							<span class="text-red-500">*</span>
-						</label>
+					<BaseInput
+						v-model="email"
+						type="email"
+						:label="t('login.email')"
+						:placeholder="t('login.emailPlaceholder')"
+						:error="emailHasError"
+						required />
 
-						<input
-							v-model="email"
-							type="email"
-							name="email"
-							id="email"
-							:placeholder="t('login.emailPlaceholder')"
-							:class="[
-								'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
-								emailHasError
-									? 'border-red-500 focus:border-red-500 focus:ring-red-100'
-									: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
-							]" />
-					</div>
-
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("login.password") }}
-							<span class="text-red-500">*</span>
-						</label>
-
-						<div class="relative">
-							<input
-								v-model="password"
-								:type="showPassword ? 'text' : 'password'"
-								:placeholder="t('login.passwordPlaceholder')"
-								:class="[
-									'shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 pr-12 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden',
-									passwordHasError
-										? 'border-red-500 focus:border-red-500 focus:ring-red-100'
-										: 'border-gray-300 focus:border-blue-500 focus:ring-blue-100',
-								]" />
-
+					<BaseInput
+						v-model="password"
+						:type="showPassword ? 'text' : 'password'"
+						:label="t('login.password')"
+						:placeholder="t('login.passwordPlaceholder')"
+						:error="passwordHasError"
+						required>
+						<template #right>
 							<button
 								type="button"
 								:aria-label="
@@ -140,12 +128,12 @@ const submit = async () => {
 										: t('login.showPassword')
 								"
 								@click="showPassword = !showPassword"
-								class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-800">
+								class="cursor-pointer text-gray-500 hover:text-gray-800">
 								<Eye v-if="!showPassword" class="h-5 w-5" />
 								<EyeOff v-else class="h-5 w-5" />
 							</button>
-						</div>
-					</div>
+						</template>
+					</BaseInput>
 
 					<BaseAlert
 						v-if="emailErrorKey || passwordErrorKey"
@@ -164,8 +152,12 @@ const submit = async () => {
 						</RouterLink>
 					</div>
 
-					<BaseButton type="submit" variant="primary" :full-width="true">
-						{{ t("login.submit") }}
+					<BaseButton
+						type="submit"
+						variant="primary"
+						:full-width="true"
+						:disabled="loading">
+						{{ loading ? t("login.loggingIn") : t("login.submit") }}
 					</BaseButton>
 
 					<p class="text-center text-sm text-gray-500">

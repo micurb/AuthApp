@@ -146,6 +146,62 @@ export const defaultEmailTemplates = [
   },
 
   // =========================
+  // ADMIN PASSWORD RESET
+  // =========================
+
+  {
+    key: EmailTemplateKey.ADMIN_PASSWORD_RESET,
+    language: 'pl',
+    name: 'Reset hasła przez administratora',
+    subject: 'Administrator zresetował Twoje hasło',
+    bodyHtml: `
+      <h2>Hasło zostało zresetowane</h2>
+
+      <p>Witaj {{fullName}},</p>
+
+      <p>
+        Administrator systemu zresetował Twoje hasło.
+      </p>
+
+      <p>
+        <strong>Nowe hasło tymczasowe:</strong>
+        {{temporaryPassword}}
+      </p>
+
+      <p>
+        Po zalogowaniu zostaniesz poproszony o ustawienie nowego hasła.
+      </p>
+    `,
+    isActive: true,
+  },
+
+  {
+    key: EmailTemplateKey.ADMIN_PASSWORD_RESET,
+    language: 'en',
+    name: 'Admin password reset',
+    subject: 'Administrator reset your password',
+    bodyHtml: `
+      <h2>Password has been reset</h2>
+
+      <p>Hello {{fullName}},</p>
+
+      <p>
+        Your password has been reset by the system administrator.
+      </p>
+
+      <p>
+        <strong>Temporary password:</strong>
+        {{temporaryPassword}}
+      </p>
+
+      <p>
+        You will be required to change your password after login.
+      </p>
+    `,
+    isActive: true,
+  },
+
+  // =========================
   // ACCOUNT LOCKED
   // =========================
 

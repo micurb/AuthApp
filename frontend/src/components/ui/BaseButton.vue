@@ -10,6 +10,10 @@ const props = defineProps({
 		type: String,
 		default: "primary",
 	},
+	size: {
+		type: String,
+		default: "md",
+	},
 	disabled: {
 		type: Boolean,
 		default: false,
@@ -38,6 +42,19 @@ const variantClass = computed(() => {
 			return "bg-blue-600 text-white hover:bg-blue-700";
 	}
 });
+
+const sizeClass = computed(() => {
+	switch (props.size) {
+		case "sm":
+			return "px-3 py-1.5 text-sm";
+
+		case "lg":
+			return "px-4 py-3 text-sm";
+
+		default:
+			return "px-4 py-2 text-sm";
+	}
+});
 </script>
 
 <template>
@@ -45,9 +62,10 @@ const variantClass = computed(() => {
 		:type="type"
 		:disabled="disabled"
 		:class="[
-			'flex items-center cursor-pointer justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
+			'flex cursor-pointer items-center justify-center rounded-lg font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
 			fullWidth ? 'w-full' : '',
 			variantClass,
+			sizeClass,
 		]">
 		<slot />
 	</button>

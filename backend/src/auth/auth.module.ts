@@ -11,8 +11,10 @@ import { MailerModule } from '../mailer/mailer.module';
     PrismaModule,
     MailerModule,
     JwtModule.register({
-      secret: 'supersecret',
-      signOptions: { expiresIn: '1h' },
+      secret: process.env.JWT_SECRET,
+      signOptions: {
+        expiresIn: '7d',
+      },
     }),
   ],
   providers: [AuthService, JwtStrategy],

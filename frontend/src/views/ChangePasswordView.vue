@@ -8,6 +8,7 @@ import { api } from "../api";
 import AuthLayout from "../layouts/AuthLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -23,18 +24,26 @@ const showCurrentPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
 
-const currentPasswordHasError = computed(() => Boolean(errorKey.value));
-const newPasswordHasError = computed(() => Boolean(errorKey.value));
-const confirmPasswordHasError = computed(() => Boolean(errorKey.value));
+const currentPasswordHasError = computed(
+	() =>
+		errorKey.value === "validation.requiredFields" ||
+		errorKey.value === "changePassword.error"
+);
+
+const newPasswordHasError = computed(
+	() =>
+		errorKey.value === "validation.requiredFields" ||
+		errorKey.value === "changePassword.passwordPolicy" ||
+		errorKey.value === "changePassword.passwordsNotMatch"
+);
+
+const confirmPasswordHasError = computed(
+	() =>
+		errorKey.value === "validation.requiredFields" ||
+		errorKey.value === "changePassword.passwordsNotMatch"
+);
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
-
-const inputClass = (hasError, extra = "") => [
-	`shadow-theme-xs h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 pr-12 text-sm text-gray-800 placeholder:text-gray-400 transition focus:ring-4 focus:outline-hidden ${extra}`,
-	hasError
-		? "border-red-500 focus:border-red-500 focus:ring-red-100"
-		: "border-gray-300 focus:border-blue-500 focus:ring-blue-100",
-];
 
 const submit = async () => {
 	errorKey.value = null;
@@ -62,7 +71,12 @@ const submit = async () => {
 			newPassword: newPassword.value,
 		});
 
-		router.push("/dashboard");
+		router.push({
+			path: "/profile",
+			query: {
+				passwordChanged: "1",
+			},
+		});
 	} catch (err) {
 		errorKey.value = "changePassword.error";
 	} finally {
@@ -86,19 +100,13 @@ const submit = async () => {
 
 			<form @submit.prevent="submit">
 				<div class="space-y-5">
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("changePassword.currentPassword") }}
-							<span class="text-red-500">*</span>
-						</label>
-
-						<div class="relative">
-							<input
-								v-model="currentPassword"
-								:type="showCurrentPassword ? 'text' : 'password'"
-								:class="inputClass(currentPasswordHasError)" />
-
+					<BaseInput
+						v-model="currentPassword"
+						:type="showCurrentPassword ? 'text' : 'password'"
+						:label="t('changePassword.currentPassword')"
+						:error="currentPasswordHasError"
+						required>
+						<template #right>
 							<button
 								type="button"
 								:aria-label="
@@ -107,26 +115,20 @@ const submit = async () => {
 										: t('changePassword.showPassword')
 								"
 								@click="showCurrentPassword = !showCurrentPassword"
-								class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-800">
+								class="cursor-pointer text-gray-500 hover:text-gray-800">
 								<Eye v-if="!showCurrentPassword" class="h-5 w-5" />
 								<EyeOff v-else class="h-5 w-5" />
 							</button>
-						</div>
-					</div>
+						</template>
+					</BaseInput>
 
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("changePassword.newPassword") }}
-							<span class="text-red-500">*</span>
-						</label>
-
-						<div class="relative">
-							<input
-								v-model="newPassword"
-								:type="showNewPassword ? 'text' : 'password'"
-								:class="inputClass(newPasswordHasError)" />
-
+					<BaseInput
+						v-model="newPassword"
+						:type="showNewPassword ? 'text' : 'password'"
+						:label="t('changePassword.newPassword')"
+						:error="newPasswordHasError"
+						required>
+						<template #right>
 							<button
 								type="button"
 								:aria-label="
@@ -135,26 +137,20 @@ const submit = async () => {
 										: t('changePassword.showPassword')
 								"
 								@click="showNewPassword = !showNewPassword"
-								class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-800">
+								class="cursor-pointer text-gray-500 hover:text-gray-800">
 								<Eye v-if="!showNewPassword" class="h-5 w-5" />
 								<EyeOff v-else class="h-5 w-5" />
 							</button>
-						</div>
-					</div>
+						</template>
+					</BaseInput>
 
-					<div>
-						<label
-							class="font-heading mb-1.5 block text-sm font-medium text-gray-700">
-							{{ t("changePassword.confirmPassword") }}
-							<span class="text-red-500">*</span>
-						</label>
-
-						<div class="relative">
-							<input
-								v-model="confirmPassword"
-								:type="showConfirmPassword ? 'text' : 'password'"
-								:class="inputClass(confirmPasswordHasError)" />
-
+					<BaseInput
+						v-model="confirmPassword"
+						:type="showConfirmPassword ? 'text' : 'password'"
+						:label="t('changePassword.confirmPassword')"
+						:error="confirmPasswordHasError"
+						required>
+						<template #right>
 							<button
 								type="button"
 								:aria-label="
@@ -163,12 +159,12 @@ const submit = async () => {
 										: t('changePassword.showPassword')
 								"
 								@click="showConfirmPassword = !showConfirmPassword"
-								class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-800">
+								class="cursor-pointer text-gray-500 hover:text-gray-800">
 								<Eye v-if="!showConfirmPassword" class="h-5 w-5" />
 								<EyeOff v-else class="h-5 w-5" />
 							</button>
-						</div>
-					</div>
+						</template>
+					</BaseInput>
 
 					<BaseAlert
 						type="info"

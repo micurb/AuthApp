@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,26 +7,26 @@ datasource db {
 }
 
 model User {
-  id                    Int      @id @default(autoincrement())
-  email                 String   @unique
-  password              String
-  firstName             String?
-  lastName              String?
-  phone                 String?
-  jobTitle              String?
-  role                  Role     @default(USER)
-  isSuperAdmin          Boolean  @default(false)
-  notificationsEnabled  Boolean  @default(true)
-  preferredLanguage String @default("pl")
-  mustChangePassword    Boolean @default(false)
-  failedLoginAttempts Int       @default(0)
-  lockedUntil         DateTime?
-  passwordResetToken     String?
-  passwordResetExpiresAt DateTime?
-  lastLoginAt           DateTime?
-  loginLogs             LoginLog[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id                      Int       @id @default(autoincrement())
+  email                   String    @unique
+  password                String
+  firstName               String?
+  lastName                String?
+  phone                   String?
+  jobTitle                String?
+  role                    Role      @default(USER)
+  isSuperAdmin            Boolean   @default(false)
+  notificationsEnabled    Boolean   @default(true)
+  preferredLanguage       String    @default("pl")
+  mustChangePassword      Boolean   @default(false)
+  failedLoginAttempts     Int       @default(0)
+  lockedUntil             DateTime?
+  passwordResetToken      String?
+  passwordResetExpiresAt  DateTime?
+  lastLoginAt             DateTime?
+  loginLogs               LoginLog[]
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 }
 
 enum Role {
@@ -58,7 +53,6 @@ model EmailTemplate {
   subject   String
   bodyHtml  String
   isActive  Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

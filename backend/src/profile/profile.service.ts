@@ -1,134 +1,147 @@
 import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
+	BadRequestException,
+	Injectable,
+	UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from '../prisma/prisma.service';
+
+const passwordRegex =
+	/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {}
+	constructor(private prisma: PrismaService) {}
 
-  private validatePhone(phone?: string) {
-    if (!phone) return;
+	private validatePhone(phone?: string) {
+		if (!phone) return;
 
-    const phoneRegex = /^[0-9+\-\s()]{7,20}$/;
+		const phoneRegex = /^[0-9+\-\s()]{7,20}$/;
 
-    if (!phoneRegex.test(phone)) {
-      throw new BadRequestException(
-        'Numer telefonu może zawierać cyfry, spacje, +, -, () i mieć od 7 do 20 znaków',
-      );
-    }
-  }
+		if (!phoneRegex.test(phone)) {
+			throw new BadRequestException(
+				'Numer telefonu może zawierać cyfry, spacje, +, -, () i mieć od 7 do 20 znaków',
+			);
+		}
+	}
 
-  async getProfile(userId: number) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        jobTitle: true,
-        role: true,
-        isSuperAdmin: true,
-        notificationsEnabled: true,
-        lastLoginAt: true,
-        createdAt: true,
-      },
-    });
-  }
+	private validatePreferredLanguage(preferredLanguage?: string) {
+		if (!preferredLanguage) return;
 
-  async updateProfile(
-    userId: number,
-    data: {
-      firstName?: string;
-      lastName?: string;
-      phone?: string;
-      jobTitle?: string;
-      notificationsEnabled?: boolean;
-    },
-  ) {
-    this.validatePhone(data.phone);
+		if (!['pl', 'en'].includes(preferredLanguage)) {
+			throw new BadRequestException('Nieprawidłowy język użytkownika');
+		}
+	}
 
-    return this.prisma.user.update({
-      where: { id: userId },
-      data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        jobTitle: true,
-        role: true,
-        isSuperAdmin: true,
-        notificationsEnabled: true,
-        updatedAt: true,
-      },
-    });
-  }
+	async getProfile(userId: number) {
+		return this.prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				email: true,
+				firstName: true,
+				lastName: true,
+				phone: true,
+				jobTitle: true,
+				role: true,
+				isSuperAdmin: true,
+				notificationsEnabled: true,
+				preferredLanguage: true,
+				lastLoginAt: true,
+				createdAt: true,
+			},
+		});
+	}
 
-  async changePassword(
-    userId: number,
-    data: {
-      currentPassword?: string;
-      newPassword: string;
-    },
-  ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+	async updateProfile(
+		userId: number,
+		data: {
+			firstName?: string;
+			lastName?: string;
+			phone?: string;
+			jobTitle?: string;
+			notificationsEnabled?: boolean;
+			preferredLanguage?: string;
+		},
+	) {
+		this.validatePhone(data.phone);
+		this.validatePreferredLanguage(data.preferredLanguage);
 
-    if (!user) {
-      throw new UnauthorizedException();
-    }
+		return this.prisma.user.update({
+			where: { id: userId },
+			data,
+			select: {
+				id: true,
+				email: true,
+				firstName: true,
+				lastName: true,
+				phone: true,
+				jobTitle: true,
+				role: true,
+				isSuperAdmin: true,
+				notificationsEnabled: true,
+				preferredLanguage: true,
+				updatedAt: true,
+			},
+		});
+	}
 
-    if (!user.mustChangePassword) {
-      const isValid = await bcrypt.compare(
-        data.currentPassword || '',
-        user.password,
-      );
+	async changePassword(
+		userId: number,
+		data: {
+			currentPassword?: string;
+			newPassword: string;
+		},
+	) {
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+		});
 
-      if (!isValid) {
-        throw new UnauthorizedException('Nieprawidłowe hasło');
-      }
-    }
+		if (!user) {
+			throw new UnauthorizedException();
+		}
 
-    const isSameAsCurrentPassword = await bcrypt.compare(
-      data.newPassword,
-      user.password,
-    );
+		if (!user.mustChangePassword) {
+			const isValid = await bcrypt.compare(
+				data.currentPassword || '',
+				user.password,
+			);
 
-    if (isSameAsCurrentPassword) {
-      throw new BadRequestException(
-        'Nowe hasło nie może być takie samo jak obecne',
-      );
-    }
+			if (!isValid) {
+				throw new UnauthorizedException('Nieprawidłowe hasło');
+			}
+		}
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+		if (!passwordRegex.test(data.newPassword)) {
+			throw new BadRequestException(
+				'Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny',
+			);
+		}
 
-    if (!passwordRegex.test(data.newPassword)) {
-      throw new BadRequestException(
-        'Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny',
-      );
-    }
+		const isSameAsCurrentPassword = await bcrypt.compare(
+			data.newPassword,
+			user.password,
+		);
 
-    const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+		if (isSameAsCurrentPassword) {
+			throw new BadRequestException(
+				'Nowe hasło nie może być takie samo jak obecne',
+			);
+		}
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        password: hashedPassword,
-        mustChangePassword: false,
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
-    });
+		const hashedPassword = await bcrypt.hash(data.newPassword, 10);
 
-    return { message: 'Hasło zmienione' };
-  }
+		await this.prisma.user.update({
+			where: { id: userId },
+			data: {
+				password: hashedPassword,
+				mustChangePassword: false,
+				failedLoginAttempts: 0,
+				lockedUntil: null,
+			},
+		});
+
+		return { message: 'Hasło zmienione' };
+	}
 }

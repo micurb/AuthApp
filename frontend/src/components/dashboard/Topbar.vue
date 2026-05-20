@@ -1,114 +1,100 @@
 <script setup>
 import { computed } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { Menu } from "lucide-vue-next";
+
+import BaseBadge from "../ui/BaseBadge.vue";
+import BaseButton from "../ui/BaseButton.vue";
 import { useAuthStore } from "../../stores/auth";
 
-const ROLE = {
-	ADMIN: "ADMIN",
-};
+defineEmits(["open-sidebar"]);
+
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 
 const { t } = useI18n();
 
-const router = useRouter();
-const route = useRoute();
-const auth = useAuthStore();
+const pageTitle = computed(() => {
+	if (route.path.startsWith("/users")) {
+		return t("sidebar.users");
+	}
 
-const logout = () => {
-	auth.logout();
-	router.push("/login");
-};
+	if (route.path.startsWith("/profile")) {
+		return t("sidebar.profile");
+	}
+
+	if (route.path.startsWith("/email-templates")) {
+		return t("sidebar.emailTemplates");
+	}
+
+	return t("sidebar.dashboard");
+});
+
+const roleVariant = computed(() => {
+	if (auth.user?.isSuperAdmin) {
+		return "purple";
+	}
+
+	if (auth.user?.role === "ADMIN") {
+		return "info";
+	}
+
+	return "gray";
+});
 
 const roleLabel = computed(() => {
 	if (auth.user?.isSuperAdmin) {
-		return t("topbar.superAdmin");
+		return "SUPER ADMIN";
 	}
 
-	if (auth.user?.role === ROLE.ADMIN) {
-		return t("topbar.admin");
-	}
-
-	return t("topbar.user");
+	return auth.user?.role || "USER";
 });
 
-const currentPage = computed(() => {
-	const map = {
-		"/dashboard": t("topbar.dashboard"),
-		"/users": t("topbar.users"),
-		"/email-templates": t("topbar.emailTemplates"),
-		"/profile": t("topbar.profile"),
-	};
-
-	return map[route.path] ?? t("topbar.dashboard");
-});
-
-const fullName = computed(() => {
-	const firstName = auth.user?.firstName || "";
-	const lastName = auth.user?.lastName || "";
-
-	return `${firstName} ${lastName}`.trim();
-});
+const logout = async () => {
+	auth.logout();
+	await router.push("/login");
+};
 </script>
 
 <template>
 	<header
-		class="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-		<div class="flex items-center gap-3 text-sm">
-			<span
-				v-if="auth.user?.isSuperAdmin"
-				class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
-				{{ roleLabel }}
-			</span>
+		class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
+		<div class="flex items-center gap-3">
+			<button
+				type="button"
+				@click="$emit('open-sidebar')"
+				class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-700 transition hover:bg-gray-100 lg:hidden">
+				<Menu class="h-5 w-5" />
+			</button>
 
-			<span
-				v-else-if="auth.user?.role === ROLE.ADMIN"
-				class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-				{{ roleLabel }}
-			</span>
+			<div>
+				<p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+					{{ t("app.name") }}
+				</p>
 
-			<span
-				v-else
-				class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-				{{ roleLabel }}
-			</span>
-
-			<div class="flex items-center gap-2 text-gray-500">
-				<span
-					v-if="route.path === '/dashboard'"
-					class="font-medium text-gray-900">
-					{{ t("topbar.dashboard") }}
-				</span>
-
-				<template v-else>
-					<RouterLink
-						to="/dashboard"
-						class="font-medium text-gray-700 hover:text-blue-600">
-						{{ t("topbar.dashboard") }}
-					</RouterLink>
-
-					<span>/</span>
-
-					<span class="text-gray-900">
-						{{ currentPage }}
-					</span>
-				</template>
+				<h1 class="text-lg font-semibold text-gray-900">
+					{{ pageTitle }}
+				</h1>
 			</div>
 		</div>
 
-		<div class="flex items-center gap-4">
-			<span class="text-sm text-gray-600">
-				{{ t("topbar.welcome") }},
-				<span class="font-medium text-gray-900">
-					{{ fullName || auth.user?.email }}
-				</span>
-				<span class="text-gray-500"> ({{ auth.user?.email }}) </span>
-			</span>
+		<div class="flex items-center gap-3">
+			<div class="hidden items-center gap-3 sm:flex">
+				<p class="text-sm font-medium text-gray-900">
+					{{ t("topbar.welcome") }}
+					{{ auth.user?.firstName }} {{ auth.user?.lastName }}
+				</p>
 
-			<button
-				@click="logout"
-				class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-100">
+				<BaseBadge :variant="roleVariant">
+					{{ roleLabel }}
+				</BaseBadge>
+			</div>
+
+			<BaseButton variant="secondary" size="sm" @click="logout">
 				{{ t("topbar.logout") }}
-			</button>
+			</BaseButton>
 		</div>
 	</header>
 </template>

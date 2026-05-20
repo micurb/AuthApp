@@ -17,7 +17,9 @@
 		"forgotPassword": "Forgot password",
 		"invalidCredentials": "Invalid email or password",
 		"invalidCredentialsWithAttempts": "Invalid password. Attempts left: {count}.",
-		"accountLocked": "Your account has been temporarily locked. Try again later or reset your password."
+		"accountLocked": "Your account has been temporarily locked. Try again later or reset your password.",
+		"loggingIn": "Signing in...",
+		"requiredPassword": "Password is required"
 	},
 
 	"forgotPassword": {
@@ -50,7 +52,9 @@
 	"validation": {
 		"requiredEmail": "Email is required",
 		"invalidEmail": "Enter a valid email address",
-		"requiredFields": "Fill in all required fields"
+		"requiredFields": "Fill in all required fields",
+		"requiredPassword": "Password is required",
+		"invalidPhone": "Phone number can contain digits, spaces, +, -, () and must be 7 to 20 characters long"
 	},
 
 	"resetPassword": {
@@ -67,7 +71,8 @@
 		"error": "Could not change password",
 		"showPassword": "Show password",
 		"hidePassword": "Hide password",
-		"sameAsCurrentPassword": "The new password cannot be the same as the current password."
+		"sameAsCurrentPassword": "The new password cannot be the same as the current password.",
+		"invalidOrExpiredToken": "The reset link is invalid, expired, or has already been used."
 	},
 
 	"dashboard": {
@@ -118,7 +123,11 @@
 		"superAdmin": "SUPER ADMIN",
 		"admin": "ADMIN",
 		"user": "USER",
-		"language": "Language"
+		"language": "Language",
+		"security": "Security",
+		"securitySubtitle": "Manage your password and account security settings.",
+		"changePassword": "Change password",
+		"passwordChanged": "Password has been changed."
 	},
 
 	"users": {
@@ -164,7 +173,11 @@
 		"resetQuestion": "Are you sure you want to generate a new temporary password for user",
 		"resetInfo": "The user will receive an email with a new password and will have to change it after signing in.",
 		"resetting": "Resetting...",
-		"language": "Language"
+		"language": "Language",
+		"pagination": "Page {page} of {total}",
+		"previous": "Previous",
+		"next": "Next",
+		"invalidPhone": "Phone number can contain digits, spaces, +, -, () and must be 7 to 20 characters long"
 	},
 
 	"emailTemplates": {
@@ -185,5 +198,5 @@
 		"fetchError": "Could not fetch templates",
 		"saveError": "Could not save template",
 		"language": "Language"
-	  }
+	}
 }

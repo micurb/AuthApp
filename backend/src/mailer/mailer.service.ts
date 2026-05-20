@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailTemplateKey } from './email-template-key.enum';
 
 @Injectable()
 export class MailerService {
-  private transporter;
+  private transporter: Transporter;
 
   constructor(private readonly prisma: PrismaService) {
     this.transporter = nodemailer.createTransport({
@@ -26,18 +27,31 @@ export class MailerService {
     });
   }
 
+  private getFrontendUrl() {
+    return process.env.FRONTEND_URL || 'http://localhost:5173';
+  }
+
   async sendTemplateEmail(
     to: string,
     templateKey: EmailTemplateKey,
     variables: Record<string, string>,
     language = 'pl',
   ) {
-    const template = await this.prisma.emailTemplate.findFirst({
+    let template = await this.prisma.emailTemplate.findFirst({
       where: {
         key: templateKey,
         language,
       },
     });
+
+    if (!template && language !== 'pl') {
+      template = await this.prisma.emailTemplate.findFirst({
+        where: {
+          key: templateKey,
+          language: 'pl',
+        },
+      });
+    }
 
     if (!template || !template.isActive) {
       throw new NotFoundException(
@@ -73,12 +87,8 @@ export class MailerService {
     );
   }
 
-  async sendPasswordResetEmail(
-    to: string,
-    token: string,
-    language = 'pl',
-  ) {
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  async sendPasswordResetEmail(to: string, token: string, language = 'pl') {
+    const resetLink = `${this.getFrontendUrl()}/reset-password?token=${token}`;
 
     await this.sendTemplateEmail(
       to,
@@ -117,6 +127,23 @@ export class MailerService {
       {
         fullName: fullName ?? '',
         lockedUntil,
+      },
+      language,
+    );
+  }
+
+  async sendAdminPasswordResetEmail(
+    to: string,
+    password: string,
+    fullName?: string,
+    language = 'pl',
+  ) {
+    await this.sendTemplateEmail(
+      to,
+      EmailTemplateKey.ADMIN_PASSWORD_RESET,
+      {
+        fullName: fullName ?? '',
+        temporaryPassword: password,
       },
       language,
     );

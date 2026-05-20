@@ -1,15 +1,23 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute } from "vue-router";
 
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BaseAlert from "../components/ui/BaseAlert.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
+import BaseSelect from "../components/ui/BaseSelect.vue";
+import BaseCheckbox from "../components/ui/BaseCheckbox.vue";
+import BaseBadge from "../components/ui/BaseBadge.vue";
+import BaseCard from "../components/ui/BaseCard.vue";
 import { api } from "../api";
 
 const { t, locale } = useI18n();
 
 const profile = ref(null);
+
+const route = useRoute();
 
 const form = ref({
 	firstName: "",
@@ -20,6 +28,11 @@ const form = ref({
 	preferredLanguage: "pl",
 });
 
+const languageOptions = [
+	{ value: "pl", label: "Polski" },
+	{ value: "en", label: "English" },
+];
+
 const messageKey = ref(null);
 const errorKey = ref(null);
 const errorMessage = ref(null);
@@ -29,13 +42,6 @@ const phoneHasError = () => {
 
 	return errorMessage.value.toLowerCase().includes("telefonu");
 };
-
-const inputClass = hasError => [
-	"w-full rounded-lg border px-4 py-2 text-sm text-gray-800 transition focus:ring-4 focus:outline-hidden",
-	hasError
-		? "border-red-500 focus:border-red-500 focus:ring-red-100"
-		: "border-gray-300 focus:border-blue-500 focus:ring-blue-100",
-];
 
 const roleLabel = () => {
 	if (profile.value?.isSuperAdmin) return t("profile.superAdmin");
@@ -57,6 +63,12 @@ onMounted(async () => {
 		notificationsEnabled: res.data.notificationsEnabled ?? true,
 		preferredLanguage: res.data.preferredLanguage || "pl",
 	};
+
+	if (route.query.passwordChanged === "1") {
+		messageKey.value = "profile.passwordChanged";
+
+		window.history.replaceState({}, document.title, "/profile");
+	}
 });
 
 const submit = async () => {
@@ -91,7 +103,7 @@ const submit = async () => {
 			</h1>
 		</div>
 
-		<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+		<BaseCard class="mb-6">
 			<h2 class="mb-4 text-lg font-semibold text-gray-900">
 				{{ t("profile.summaryTitle") }}
 			</h2>
@@ -134,23 +146,17 @@ const submit = async () => {
 					<p class="text-xs text-gray-500">{{ t("profile.role") }}</p>
 
 					<div class="mt-1">
-						<span
-							v-if="profile?.isSuperAdmin"
-							class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+						<BaseBadge v-if="profile?.isSuperAdmin" variant="purple">
 							{{ roleLabel() }}
-						</span>
+						</BaseBadge>
 
-						<span
-							v-else-if="profile?.role === 'ADMIN'"
-							class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+						<BaseBadge v-else-if="profile?.role === 'ADMIN'" variant="info">
 							{{ roleLabel() }}
-						</span>
+						</BaseBadge>
 
-						<span
-							v-else
-							class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+						<BaseBadge v-else>
 							{{ roleLabel() }}
-						</span>
+						</BaseBadge>
 					</div>
 				</div>
 
@@ -172,23 +178,19 @@ const submit = async () => {
 					</p>
 
 					<div class="mt-1">
-						<span
-							v-if="profile?.notificationsEnabled"
-							class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+						<BaseBadge v-if="profile?.notificationsEnabled" variant="success">
 							{{ t("profile.enabled") }}
-						</span>
+						</BaseBadge>
 
-						<span
-							v-else
-							class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+						<BaseBadge v-else>
 							{{ t("profile.disabled") }}
-						</span>
+						</BaseBadge>
 					</div>
 				</div>
 			</div>
-		</div>
+		</BaseCard>
 
-		<div class="rounded-2xl border border-gray-200 bg-white p-5">
+		<BaseCard>
 			<h2 class="mb-2 text-lg font-semibold text-gray-900">
 				{{ t("profile.editTitle") }}
 			</h2>
@@ -212,63 +214,30 @@ const submit = async () => {
 			<form
 				@submit.prevent="submit"
 				class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">
-						{{ t("profile.firstName") }}
-					</label>
+				<BaseInput v-model="form.firstName" :label="t('profile.firstName')" />
 
-					<input v-model="form.firstName" :class="inputClass(false)" />
-				</div>
+				<BaseInput v-model="form.lastName" :label="t('profile.lastName')" />
 
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">
-						{{ t("profile.lastName") }}
-					</label>
+				<BaseInput
+					v-model="form.phone"
+					:label="t('profile.phone')"
+					:error="phoneHasError()" />
 
-					<input v-model="form.lastName" :class="inputClass(false)" />
-				</div>
+				<BaseInput v-model="form.jobTitle" :label="t('profile.jobTitle')" />
 
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">
-						{{ t("profile.phone") }}
-					</label>
-
-					<input v-model="form.phone" :class="inputClass(phoneHasError())" />
-				</div>
-
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">
-						{{ t("profile.jobTitle") }}
-					</label>
-
-					<input v-model="form.jobTitle" :class="inputClass(false)" />
-				</div>
-
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">
-						{{ t("profile.language") }}
-					</label>
-
-					<select v-model="form.preferredLanguage" :class="inputClass(false)">
-						<option value="pl">Polski</option>
-						<option value="en">English</option>
-					</select>
-				</div>
+				<BaseSelect
+					v-model="form.preferredLanguage"
+					:label="t('profile.language')"
+					:options="languageOptions" />
 
 				<div>
 					<label class="mb-1 block text-sm font-medium text-gray-700">
 						{{ t("profile.notifications") }}
 					</label>
 
-					<label
-						class="flex h-[42px] items-center gap-3 rounded-lg border border-gray-300 px-4 text-sm text-gray-700">
-						<input
-							v-model="form.notificationsEnabled"
-							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-
-						{{ t("profile.notificationsEnabled") }}
-					</label>
+					<BaseCheckbox
+						v-model="form.notificationsEnabled"
+						:label="t('profile.notificationsEnabled')" />
 				</div>
 
 				<div class="flex items-end">
@@ -277,6 +246,23 @@ const submit = async () => {
 					</BaseButton>
 				</div>
 			</form>
-		</div>
+		</BaseCard>
+		<BaseCard class="mt-6">
+			<h2 class="mb-2 text-lg font-semibold text-gray-900">
+				{{ t("profile.security") }}
+			</h2>
+
+			<p class="mb-5 text-sm text-gray-500">
+				{{ t("profile.securitySubtitle") }}
+			</p>
+
+			<div class="flex justify-start">
+				<RouterLink to="/change-password">
+					<BaseButton type="button" variant="secondary">
+						{{ t("profile.changePassword") }}
+					</BaseButton>
+				</RouterLink>
+			</div>
+		</BaseCard>
 	</DashboardLayout>
 </template>

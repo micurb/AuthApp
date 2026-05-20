@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 import DashboardLayout from "../layouts/DashboardLayout.vue";
+import BaseCard from "../components/ui/BaseCard.vue";
 
 const { t } = useI18n();
 </script>
@@ -14,10 +15,10 @@ const { t } = useI18n();
 			</h1>
 		</div>
 
-		<div class="rounded-2xl border border-gray-200 bg-white p-6">
+		<BaseCard>
 			<p class="text-gray-600">
 				{{ t("dashboard.welcome") }}
 			</p>
-		</div>
+		</BaseCard>
 	</DashboardLayout>
 </template>

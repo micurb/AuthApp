@@ -1,245 +1,270 @@
 import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+	BadRequestException,
+	Injectable,
+	UnauthorizedException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import * as crypto from "crypto";
 
-import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import * as crypto from 'crypto';
-import { MailerService } from '../mailer/mailer.service';
+import { PrismaService } from "../prisma/prisma.service";
+import { MailerService } from "../mailer/mailer.service";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME_MINUTES = 15;
 
+const passwordRegex =
+	/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
 @Injectable()
 export class AuthService {
-  constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private mailerService: MailerService,
-  ) {}
+	constructor(
+		private prisma: PrismaService,
+		private jwtService: JwtService,
+		private mailerService: MailerService
+	) {}
 
-  async register(data: {
-    email: string;
-    password: string;
-    firstName?: string;
-    lastName?: string;
-  }) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+	private normalizeEmail(email: string) {
+		return email.toLowerCase().trim();
+	}
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      },
-    });
+	private getLockUntilDate() {
+		return new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
+	}
 
-    return {
-      id: user.id,
-      email: user.email,
-    };
-  }
+	private isUserLocked(lockedUntil: Date | null) {
+		return lockedUntil && lockedUntil > new Date();
+	}
 
-  private getLockUntilDate() {
-    return new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
-  }
+	async register(data: {
+		email: string;
+		password: string;
+		firstName?: string;
+		lastName?: string;
+	}) {
+		const email = this.normalizeEmail(data.email);
 
-  private isUserLocked(lockedUntil: Date | null) {
-    return lockedUntil && lockedUntil > new Date();
-  }
+		const existingUser = await this.prisma.user.findUnique({
+			where: { email },
+		});
 
-  async login(data: { email: string; password: string }, req?: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
+		if (existingUser) {
+			throw new BadRequestException("Email already exists");
+		}
 
-    if (!user) {
-      throw new UnauthorizedException({
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid credentials',
-      });
-    }
+		if (!passwordRegex.test(data.password)) {
+			throw new BadRequestException(
+				"Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny"
+			);
+		}
 
-    if (this.isUserLocked(user.lockedUntil)) {
-      throw new UnauthorizedException({
-        code: 'ACCOUNT_LOCKED',
-        message: 'Account temporarily locked',
-        lockedUntil: user.lockedUntil,
-      });
-    }
+		const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
+		const user = await this.prisma.user.create({
+			data: {
+				email,
+				password: hashedPassword,
+				firstName: data.firstName,
+				lastName: data.lastName,
+			},
+		});
 
-    if (!isPasswordValid) {
-      const failedAttempts = user.failedLoginAttempts + 1;
+		return {
+			id: user.id,
+			email: user.email,
+		};
+	}
 
-      const lockedUntil =
-        failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
-          ? this.getLockUntilDate()
-          : null;
+	async login(data: { email: string; password: string }, req?: any) {
+		const email = this.normalizeEmail(data.email);
 
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: failedAttempts,
-          lockedUntil,
-        },
-      });
+		const user = await this.prisma.user.findUnique({
+			where: { email },
+		});
 
-      if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
-        await this.mailerService.sendAccountLockedEmail(
-          user.email,
-          lockedUntil!.toLocaleString(),
-          `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-          user.preferredLanguage,
-        );
+		if (!user) {
+			throw new UnauthorizedException({
+				code: "INVALID_CREDENTIALS",
+				message: "Invalid credentials",
+			});
+		}
 
-        throw new UnauthorizedException({
-          code: 'ACCOUNT_LOCKED',
-          message: 'Account temporarily locked',
-          lockedUntil,
-        });
-      }
+		if (this.isUserLocked(user.lockedUntil)) {
+			throw new UnauthorizedException({
+				code: "ACCOUNT_LOCKED",
+				message: "Account temporarily locked",
+				lockedUntil: user.lockedUntil,
+			});
+		}
 
-      throw new UnauthorizedException({
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid credentials',
-        attemptsLeft: MAX_FAILED_LOGIN_ATTEMPTS - failedAttempts,
-      });
-    }
+		const isPasswordValid = await bcrypt.compare(data.password, user.password);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLoginAt: new Date(),
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
-    });
+		if (!isPasswordValid) {
+			const failedAttempts = user.failedLoginAttempts + 1;
 
-    await this.prisma.loginLog.create({
-      data: {
-        userId: user.id,
-        email: user.email,
-        ip: req?.ip || null,
-        userAgent: req?.headers?.['user-agent'] || null,
-      },
-    });
+			const lockedUntil =
+				failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+					? this.getLockUntilDate()
+					: null;
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
+			await this.prisma.user.update({
+				where: { id: user.id },
+				data: {
+					failedLoginAttempts: failedAttempts,
+					lockedUntil,
+				},
+			});
 
-    const token = await this.jwtService.signAsync(payload);
+			if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+				await this.mailerService.sendAccountLockedEmail(
+					user.email,
+					lockedUntil!.toLocaleString(),
+					`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
+					user.preferredLanguage
+				);
 
-    return {
-      access_token: token,
-      mustChangePassword: user.mustChangePassword,
-    };
-  }
+				throw new UnauthorizedException({
+					code: "ACCOUNT_LOCKED",
+					message: "Account temporarily locked",
+					lockedUntil,
+				});
+			}
 
-  async forgotPassword(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+			throw new UnauthorizedException({
+				code: "INVALID_CREDENTIALS",
+				message: "Invalid credentials",
+				attemptsLeft: MAX_FAILED_LOGIN_ATTEMPTS - failedAttempts,
+			});
+		}
 
-    if (!user) {
-      return {
-        message: 'Jeśli konto istnieje, email resetujący został wysłany.',
-      };
-    }
+		await this.prisma.user.update({
+			where: { id: user.id },
+			data: {
+				lastLoginAt: new Date(),
+				failedLoginAttempts: 0,
+				lockedUntil: null,
+			},
+		});
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = await bcrypt.hash(resetToken, 10);
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+		await this.prisma.loginLog.create({
+			data: {
+				userId: user.id,
+				email: user.email,
+				ip: req?.ip || null,
+				userAgent: req?.headers?.["user-agent"] || null,
+			},
+		});
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetToken: hashedToken,
-        passwordResetExpiresAt: expiresAt,
-      },
-    });
+		const payload = {
+			sub: user.id,
+			email: user.email,
+			role: user.role,
+			isSuperAdmin: user.isSuperAdmin,
+		};
 
-    await this.mailerService.sendPasswordResetEmail(
-      user.email,
-      resetToken,
-      user.preferredLanguage,
-    );
+		const token = await this.jwtService.signAsync(payload);
 
-    return {
-      message: 'Jeśli konto istnieje, email resetujący został wysłany.',
-    };
-  }
+		return {
+			access_token: token,
+			mustChangePassword: user.mustChangePassword,
+		};
+	}
 
-  async resetPassword(data: { token: string; password: string }) {
-    const users = await this.prisma.user.findMany({
-      where: {
-        passwordResetExpiresAt: {
-          gt: new Date(),
-        },
-      },
-    });
+	async forgotPassword(emailInput: string) {
+		const email = this.normalizeEmail(emailInput);
 
-    let matchedUser: (typeof users)[number] | null = null;
+		const user = await this.prisma.user.findUnique({
+			where: { email },
+		});
 
-    for (const user of users) {
-      if (!user.passwordResetToken) continue;
+		if (!user) {
+			return {
+				message: "Jeśli konto istnieje, email resetujący został wysłany.",
+			};
+		}
 
-      const isMatch = await bcrypt.compare(data.token, user.passwordResetToken);
+		const resetToken = crypto.randomBytes(32).toString("hex");
+		const hashedToken = await bcrypt.hash(resetToken, 10);
+		const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
 
-      if (isMatch) {
-        matchedUser = user;
-        break;
-      }
-    }
+		await this.prisma.user.update({
+			where: { id: user.id },
+			data: {
+				passwordResetToken: hashedToken,
+				passwordResetExpiresAt: expiresAt,
+			},
+		});
 
-    if (!matchedUser) {
-      throw new BadRequestException('Nieprawidłowy lub wygasły token');
-    }
+		await this.mailerService.sendPasswordResetEmail(
+			user.email,
+			resetToken,
+			user.preferredLanguage
+		);
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+		return {
+			message: "Jeśli konto istnieje, email resetujący został wysłany.",
+		};
+	}
 
-    if (!passwordRegex.test(data.password)) {
-      throw new BadRequestException(
-        'Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny',
-      );
-    }
+	async resetPassword(data: { token: string; password: string }) {
+		const users = await this.prisma.user.findMany({
+			where: {
+				passwordResetExpiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
 
-    const isSameAsCurrentPassword = await bcrypt.compare(
-      data.password,
-      matchedUser.password,
-    );
+		let matchedUser: (typeof users)[number] | null = null;
 
-    if (isSameAsCurrentPassword) {
-      throw new BadRequestException(
-        'Nowe hasło nie może być takie samo jak obecne',
-      );
-    }
+		for (const user of users) {
+			if (!user.passwordResetToken) continue;
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+			const isMatch = await bcrypt.compare(data.token, user.passwordResetToken);
 
-    await this.prisma.user.update({
-      where: { id: matchedUser.id },
-      data: {
-        password: hashedPassword,
-        passwordResetToken: null,
-        passwordResetExpiresAt: null,
-        mustChangePassword: false,
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
-    });
+			if (isMatch) {
+				matchedUser = user;
+				break;
+			}
+		}
 
-    return {
-      message: 'Hasło zostało zmienione',
-    };
-  }
+		if (!matchedUser) {
+			throw new BadRequestException("Nieprawidłowy lub wygasły token");
+		}
+
+		if (!passwordRegex.test(data.password)) {
+			throw new BadRequestException(
+				"Hasło musi mieć min 8 znaków, dużą, małą literę, cyfrę i znak specjalny"
+			);
+		}
+
+		const isSameAsCurrentPassword = await bcrypt.compare(
+			data.password,
+			matchedUser.password
+		);
+
+		if (isSameAsCurrentPassword) {
+			throw new BadRequestException(
+				"Nowe hasło nie może być takie samo jak obecne"
+			);
+		}
+
+		const hashedPassword = await bcrypt.hash(data.password, 10);
+
+		await this.prisma.user.update({
+			where: { id: matchedUser.id },
+			data: {
+				password: hashedPassword,
+				passwordResetToken: null,
+				passwordResetExpiresAt: null,
+				mustChangePassword: false,
+				failedLoginAttempts: 0,
+				lockedUntil: null,
+			},
+		});
+
+		return {
+			message: "Hasło zostało zmienione",
+		};
+	}
 }

@@ -1,67 +1,90 @@
 import {
-  Controller,
-  Get,
-  UseGuards,
-  Delete,
-  Param,
-  ParseIntPipe,
-  Post,
-  Body,
-  Req,
-  Patch,
+	BadRequestException,
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	ParseIntPipe,
+	Patch,
+	Post,
+	Req,
+	UseGuards,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
+import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, new RolesGuard('ADMIN'))
+@UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+	constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  getUsers() {
-    return this.usersService.getUsers();
-  }
+	private ensureAdmin(req: any) {
+		if (req.user?.role !== 'ADMIN' && !req.user?.isSuperAdmin) {
+			throw new BadRequestException('Brak uprawnień');
+		}
+	}
 
-  @Post()
-  createUser(
-    @Body()
-    body: {
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      phone?: string;
-      jobTitle?: string;
-      role?: 'USER' | 'ADMIN';
-    },
-  ) {
-    return this.usersService.createUser(body);
-  }
+	@Get()
+	getUsers(@Req() req: any) {
+		this.ensureAdmin(req);
 
-  @Patch(':id')
-  updateUser(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-    @Body()
-    body: {
-      firstName?: string;
-      lastName?: string;
-      phone?: string;
-      jobTitle?: string;
-      role?: 'USER' | 'ADMIN';
-    },
-  ) {
-    return this.usersService.updateUser(id, req.user.userId, body);
-  }
+		return this.usersService.getUsers();
+	}
 
-  @Post(':id/reset-password')
-  resetUserPassword(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.usersService.resetUserPassword(id, req.user.userId);
-  }
+	@Post()
+	createUser(
+		@Req() req: any,
+		@Body()
+		body: {
+			email: string;
+			firstName?: string;
+			lastName?: string;
+			phone?: string;
+			jobTitle?: string;
+			role?: 'USER' | 'ADMIN';
+			preferredLanguage?: string;
+		},
+	) {
+		this.ensureAdmin(req);
 
-  @Delete(':id')
-  deleteUser(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.usersService.deleteUser(id, req.user.userId);
-  }
+		return this.usersService.createUser(body);
+	}
+
+	@Patch(':id')
+	updateUser(
+		@Param('id', ParseIntPipe) id: number,
+		@Req() req: any,
+		@Body()
+		body: {
+			firstName?: string;
+			lastName?: string;
+			phone?: string;
+			jobTitle?: string;
+			role?: 'USER' | 'ADMIN';
+			preferredLanguage?: string;
+		},
+	) {
+		this.ensureAdmin(req);
+
+		return this.usersService.updateUser(id, req.user.userId, body);
+	}
+
+	@Post(':id/reset-password')
+	resetUserPassword(
+		@Param('id', ParseIntPipe) id: number,
+		@Req() req: any,
+	) {
+		this.ensureAdmin(req);
+
+		return this.usersService.resetUserPassword(id, req.user.userId);
+	}
+
+	@Delete(':id')
+	deleteUser(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+		this.ensureAdmin(req);
+
+		return this.usersService.deleteUser(id, req.user.userId);
+	}
 }
